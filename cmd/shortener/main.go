@@ -27,7 +27,7 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	shortURL := req.Host + "/" + randomString
+	shortURL := "http://" + req.Host + "/" + randomString
 	//urlCache := make(map[string]string)
 	urlCache[shortURL] = url
 	res.Header().Set("content-type", "text/plain")
@@ -41,7 +41,7 @@ func urlShort(res http.ResponseWriter, req *http.Request) {
 	if len(id) == shortURLlen+1 {
 		id = id[1:]
 	}
-	shortURL := req.Host + "/" + id
+	shortURL := "http://" + req.Host + "/" + id
 	originalURL, ok := urlCache[shortURL]
 	if !ok {
 		http.Error(res, "nothing found", http.StatusBadRequest)
