@@ -12,8 +12,6 @@ type LocalCache struct {
 	CahceMap map[string]string
 }
 
-var UrlCache = make(map[string]string)
-
 func (localCache *LocalCache) SaveShortURL(shortURL, originalURL string) error {
 	localCache.CahceMap[shortURL] = originalURL
 	return nil
