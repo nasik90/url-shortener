@@ -30,7 +30,7 @@ func randomString(charCount int) (res string, err error) {
 
 }
 
-func buildShortURL(host, randomString string) string {
+func shortURLWithHost(host, randomString string) string {
 	return "http://" + host + "/" + randomString
 }
 
@@ -42,7 +42,8 @@ func shortURLWithRetrying(host string, localCache *storage.LocalCache) (string, 
 		if err != nil {
 			return "", err
 		}
-		shortURL = buildShortURL(host, randomString)
+		//shortURL = buildShortURL(host, randomString)
+		shortURL = randomString
 		shortURLUnique = localCache.ShortURLUnique(shortURL)
 	}
 	return shortURL, nil
@@ -56,19 +57,21 @@ func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex) http.Handler
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		url := buf.String()
+		originalURL := buf.String()
 		mutex.Lock()
 		shortURL, err := shortURLWithRetrying(req.Host, localCache)
-		mutex.Unlock()
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		localCache.SaveShortURL(shortURL, url)
+		localCache.SaveShortURL(shortURL, originalURL)
+		mutex.Unlock()
+
+		shortURLWithHost := shortURLWithHost(req.Host, shortURL)
 		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Content-Length", strconv.Itoa(len(shortURL)))
+		res.Header().Set("Content-Length", strconv.Itoa(len(shortURLWithHost)))
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(shortURL))
+		res.Write([]byte(shortURLWithHost))
 	}
 }
 
@@ -78,8 +81,8 @@ func GetOriginalURL(localCache *storage.LocalCache) http.HandlerFunc {
 		if len(id) == settings.ShortURLlen+1 {
 			id = id[1:]
 		}
-		shortURL := buildShortURL(req.Host, id)
-		originalURL, err := localCache.GetOriginalURL(shortURL)
+		//shortURL := buildShortURL(req.Host, id)
+		originalURL, err := localCache.GetOriginalURL(id)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return

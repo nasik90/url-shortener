@@ -10,8 +10,8 @@ import (
 func main() {
 
 	cache := make(map[string]string)
-	LocalCache := storage.LocalCache{CahceMap: cache}
+	localCache := storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
-	server.RunServer(&LocalCache, &mutex)
+	server.RunServer(&localCache, &mutex)
 
 }
