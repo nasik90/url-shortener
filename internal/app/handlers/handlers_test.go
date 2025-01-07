@@ -4,9 +4,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,8 +63,9 @@ func TestGetOriginalURL(t *testing.T) {
 	cache := make(map[string]string)
 	localCache := storage.LocalCache{CahceMap: cache}
 	type want struct {
-		code     int
-		response string
+		code         int
+		responseBody string
+		location     string
 	}
 	tests := []struct {
 		name        string
@@ -75,14 +78,16 @@ func TestGetOriginalURL(t *testing.T) {
 			shortURL:    "shortURL",
 			originalURL: "https://practicum.yandex.ru/",
 			want: want{
-				code:     http.StatusTemporaryRedirect,
-				response: "https://practicum.yandex.ru/",
+				code:         http.StatusTemporaryRedirect,
+				responseBody: "",
+				location:     "https://practicum.yandex.ru/",
 			},
 		},
 		{
 			name: "negative test #1",
 			want: want{
-				code: http.StatusBadRequest,
+				code:         http.StatusBadRequest,
+				responseBody: settings.OriginalURLNotFoundErr,
 			},
 		},
 	}
@@ -93,13 +98,19 @@ func TestGetOriginalURL(t *testing.T) {
 			}
 
 			request := httptest.NewRequest(http.MethodGet, "/"+tt.shortURL, nil)
-			request.Pattern = "/{id}"
+			//request.Pattern = "/{id}"
 			w := httptest.NewRecorder()
 			GetOriginalURL(&localCache)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
-			assert.Equal(t, tt.want.response, res.Header.Get("Location"))
+
+			assert.Equal(t, tt.want.location, res.Header.Get("Location"))
+
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want.responseBody, strings.TrimSuffix(string(resBody), "\n"))
 		})
 	}
 }
