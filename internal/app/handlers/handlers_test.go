@@ -51,8 +51,9 @@ func TestGetShortURL(t *testing.T) {
 			resBody, err := io.ReadAll(res.Body)
 
 			require.NoError(t, err)
-
-			originalURLFromDB, err := localCache.GetOriginalURL(string(resBody))
+			resBodyString := string(resBody)
+			shortURL := string(resBody)[len(resBodyString)-settings.ShortURLlen:]
+			originalURLFromDB, err := localCache.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
