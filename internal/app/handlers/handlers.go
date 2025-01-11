@@ -49,7 +49,7 @@ func shortURLWithRetrying(localCache *storage.LocalCache) (string, error) {
 	return shortURL, nil
 }
 
-func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex) http.HandlerFunc {
+func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
@@ -67,7 +67,7 @@ func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex) http.Handler
 		localCache.SaveShortURL(shortURL, originalURL)
 		mutex.Unlock()
 
-		shortURLWithHost := shortURLWithHost(req.Host, shortURL)
+		shortURLWithHost := shortURLWithHost(host, shortURL)
 		res.Header().Set("content-type", "text/plain")
 		res.Header().Set("Content-Length", strconv.Itoa(len(shortURLWithHost)))
 		res.WriteHeader(http.StatusCreated)

@@ -42,7 +42,7 @@ func TestGetShortURL(t *testing.T) {
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			GetShortURL(&localCache, &mutex)(w, request)
+			GetShortURL(&localCache, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
