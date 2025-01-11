@@ -14,6 +14,6 @@ type Options struct {
 
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.A, "a", ":8080", "address and port to run server")
-	flag.StringVar(&o.B, "b", "localhost:8080", "base address for short URL")
+	flag.StringVar(&o.B, "b", "http://localhost:8080", "base address for short URL")
 	flag.Parse()
 }

@@ -31,7 +31,8 @@ func randomString(charCount int) (res string, err error) {
 }
 
 func shortURLWithHost(host, randomString string) string {
-	return "http://" + host + "/" + randomString
+	// return "http://" + host + "/" + randomString
+	return host + "/" + randomString
 }
 
 func shortURLWithRetrying(localCache *storage.LocalCache) (string, error) {
