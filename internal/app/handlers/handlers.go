@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/storage"
 )
@@ -34,7 +35,7 @@ func shortURLWithHost(host, randomString string) string {
 	return "http://" + host + "/" + randomString
 }
 
-func shortURLWithRetrying(host string, localCache *storage.LocalCache) (string, error) {
+func shortURLWithRetrying(localCache *storage.LocalCache) (string, error) {
 	shortURL := ""
 	shortURLUnique := false
 	for !shortURLUnique {
@@ -59,7 +60,7 @@ func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex) http.Handler
 		}
 		originalURL := buf.String()
 		mutex.Lock()
-		shortURL, err := shortURLWithRetrying(req.Host, localCache)
+		shortURL, err := shortURLWithRetrying(localCache)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -77,7 +78,8 @@ func GetShortURL(localCache *storage.LocalCache, mutex *sync.Mutex) http.Handler
 
 func GetOriginalURL(localCache *storage.LocalCache) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		id := req.RequestURI
+		//id := req.RequestURI
+		id := chi.URLParam(req, "id")
 		if len(id) == settings.ShortURLlen+1 {
 			id = id[1:]
 		}
