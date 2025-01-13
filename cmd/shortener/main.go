@@ -13,8 +13,8 @@ func main() {
 	settings.ParseFlags(options)
 
 	cache := make(map[string]string)
-	localCache := storage.LocalCache{CahceMap: cache}
+	localCache := &storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
-	server.RunServer(&localCache, &mutex, options)
+	server.RunServer(localCache, &mutex, options)
 
 }

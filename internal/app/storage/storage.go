@@ -9,7 +9,7 @@ import (
 type Repositories interface {
 	SaveShortURL(shortURL, originalURL string) error
 	GetOriginalURL(shortURL string) (string, error)
-	CheckShortURL(shortURL string) error
+	ShortURLUnique(shortURL string) bool
 }
 
 type LocalCache struct {

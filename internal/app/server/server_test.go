@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"io"
@@ -42,7 +42,7 @@ func TestGetShortURL(t *testing.T) {
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			GetShortURL(&localCache, &mutex, request.Host)(w, request)
+			getShortURL(&localCache, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -99,9 +99,8 @@ func TestGetOriginalURL(t *testing.T) {
 			}
 
 			request := httptest.NewRequest(http.MethodGet, "/"+tt.shortURL, nil)
-			//request.Pattern = "/{id}"
 			w := httptest.NewRecorder()
-			GetOriginalURL(&localCache)(w, request)
+			getOriginalURL(&localCache)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
