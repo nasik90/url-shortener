@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	OriginalURLNotFoundError = errors.New("original URL not found")
+	ErrOriginalURLNotFound = errors.New("original URL not found")
 )
 
 type Options struct {
