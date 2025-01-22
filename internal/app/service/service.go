@@ -34,7 +34,7 @@ func GetOriginalURL(repository storage.Repositories, shortURL string) (string, e
 
 func randomString(charCount int) (res string, err error) {
 
-	template := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+	template := []rune(settings.TemplateForRand)
 	templateLen := len(template)
 	resChar := make([]rune, charCount)
 	for i := 0; i < charCount; i++ {

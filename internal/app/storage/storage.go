@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"errors"
-
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
@@ -24,7 +22,7 @@ func (localCache *LocalCache) SaveShortURL(shortURL, originalURL string) error {
 func (localCache *LocalCache) GetOriginalURL(shortURL string) (string, error) {
 	originalURL, ok := localCache.CahceMap[shortURL]
 	if !ok {
-		err := errors.New(settings.OriginalURLNotFoundErr)
+		err := settings.OriginalURLNotFoundErr
 		return "", err
 	}
 	return originalURL, nil

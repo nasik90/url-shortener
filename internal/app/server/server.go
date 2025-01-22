@@ -13,14 +13,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func RunServer(repository storage.Repositories, mutex *sync.Mutex, options *settings.Options) {
+func RunServer(repository storage.Repositories, options *settings.Options) {
+
+	var mutex sync.Mutex
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Post("/", getShortURL(repository, mutex, options.B))
+		r.Post("/", getShortURL(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", getOriginalURL(repository))
 	})
-	err := http.ListenAndServe(options.A, r)
+	err := http.ListenAndServe(options.ServerAddress, r)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +58,7 @@ func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
 		}
 		originalURL, err := service.GetOriginalURL(repository, id)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
+			http.Error(res, err.Error(), http.StatusNotFound)
 			return
 		}
 		res.Header().Set("Location", originalURL)

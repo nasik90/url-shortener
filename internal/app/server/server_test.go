@@ -87,8 +87,8 @@ func TestGetOriginalURL(t *testing.T) {
 		{
 			name: "negative test #1",
 			want: want{
-				code:         http.StatusBadRequest,
-				responseBody: settings.OriginalURLNotFoundErr,
+				code:         http.StatusNotFound,
+				responseBody: settings.OriginalURLNotFoundErr.Error(),
 			},
 		},
 	}
