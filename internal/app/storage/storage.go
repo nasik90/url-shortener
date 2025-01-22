@@ -22,7 +22,7 @@ func (localCache *LocalCache) SaveShortURL(shortURL, originalURL string) error {
 func (localCache *LocalCache) GetOriginalURL(shortURL string) (string, error) {
 	originalURL, ok := localCache.CahceMap[shortURL]
 	if !ok {
-		err := settings.OriginalURLNotFoundErr
+		err := settings.OriginalURLNotFoundError
 		return "", err
 	}
 	return originalURL, nil
