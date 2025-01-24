@@ -7,8 +7,10 @@ import (
 	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	"github.com/nasik90/url-shortener/internal/app/logger"
 	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
+	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -17,12 +19,18 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 
 	var mutex sync.Mutex
 
+	if err := logger.Initialize(options.LogLevel); err != nil {
+		panic(err)
+	}
+
+	logger.Log.Info("Running server", zap.String("address", options.ServerAddress))
+
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", getShortURL(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", getOriginalURL(repository))
 	})
-	err := http.ListenAndServe(options.ServerAddress, r)
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(r.ServeHTTP))
 	if err != nil {
 		panic(err)
 	}

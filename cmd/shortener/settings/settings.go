@@ -18,11 +18,13 @@ var (
 type Options struct {
 	ServerAddress string
 	BaseURL       string
+	LogLevel      string
 }
 
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
+	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
@@ -30,5 +32,8 @@ func ParseFlags(o *Options) {
 	}
 	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
 		o.BaseURL = baseURL
+	}
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		o.LogLevel = envLogLevel
 	}
 }
