@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"sync"
@@ -14,6 +15,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 )
+
+type originalURLStruct struct {
+	URL string `json:"url"`
+}
+
+type shortURLResultStruct struct {
+	Result string `json:"result"`
+}
 
 func RunServer(repository storage.Repositories, options *settings.Options) {
 
@@ -28,6 +37,7 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", getShortURL(repository, &mutex, options.BaseURL))
+		r.Post("/api/shorten", getShortURLJSON(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", getOriginalURL(repository))
 	})
 	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(r.ServeHTTP))
@@ -45,6 +55,10 @@ func getShortURL(repository storage.Repositories, mutex *sync.Mutex, host string
 			return
 		}
 		originalURL := buf.String()
+		if originalURL == "" {
+			http.Error(res, "empty url", http.StatusBadRequest)
+			return
+		}
 		shortURL, err := service.GetShortURL(repository, mutex, originalURL, host)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -71,5 +85,40 @@ func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
 		}
 		res.Header().Set("Location", originalURL)
 		res.WriteHeader(http.StatusTemporaryRedirect)
+	}
+}
+
+func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var buf bytes.Buffer
+		_, err := buf.ReadFrom(req.Body)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var originalURLStruct originalURLStruct
+		err = json.Unmarshal(buf.Bytes(), &originalURLStruct)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if originalURLStruct.URL == "" {
+			http.Error(res, "empty url", http.StatusBadRequest)
+			return
+		}
+
+		shortURL, err := service.GetShortURL(repository, mutex, originalURLStruct.URL, host)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resultStruct := shortURLResultStruct{Result: shortURL}
+		result, err := json.MarshalIndent(resultStruct, "", "    ")
+		res.Header().Set("content-type", "text/plain")
+		res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
+		res.WriteHeader(http.StatusCreated)
+		res.Write(result)
 	}
 }
