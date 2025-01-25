@@ -116,7 +116,12 @@ func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host st
 		}
 		resultStruct := shortURLResultStruct{Result: shortURL}
 		result, err := json.MarshalIndent(resultStruct, "", "    ")
-		res.Header().Set("content-type", "text/plain")
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "application/json")
 		res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
 		res.WriteHeader(http.StatusCreated)
 		res.Write(result)
