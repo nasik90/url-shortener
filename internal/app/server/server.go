@@ -25,10 +25,17 @@ type shortURLResultStruct struct {
 	Result string `json:"result"`
 }
 
-func RunServer(repository storage.Repositories, options *settings.Options) {
+var (
+	mutex      sync.Mutex
+	repository storage.Repositories
+	options    *settings.Options
+)
 
-	var mutex sync.Mutex
+func RunServer(repo storage.Repositories, opt *settings.Options) {
 
+	//var mutex sync.Mutex
+	options = opt
+	repository = repo
 	if err := logger.Initialize(options.LogLevel); err != nil {
 		panic(err)
 	}
@@ -38,7 +45,7 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", (getShortURL(repository, &mutex, options.BaseURL)))
-		r.Post("/api/shorten", getShortURLJSON(repository, &mutex, options.BaseURL))
+		r.Post("/api/shorten", getShortURLJSON)
 		r.Get("/{id}", getOriginalURL(repository))
 	})
 	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(gzipMiddleware(r.ServeHTTP)))
@@ -89,52 +96,53 @@ func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
 	}
 }
 
-func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(req.Body)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
+func getShortURLJSON(res http.ResponseWriter, req *http.Request) {
 
-		var originalURLStruct originalURLStruct
-		err = json.Unmarshal(buf.Bytes(), &originalURLStruct)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if originalURLStruct.URL == "" {
-			http.Error(res, "empty url", http.StatusBadRequest)
-			return
-		}
-
-		shortURL, err := service.GetShortURL(repository, mutex, originalURLStruct.URL, host)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		resultStruct := shortURLResultStruct{Result: shortURL}
-		result, err := json.MarshalIndent(resultStruct, "", "    ")
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		res.Header().Set("content-type", "application/json")
-		res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
-		res.WriteHeader(http.StatusCreated)
-		res.Write(result)
-		//logger.Log.Info("Running server", []byte(res))
-		// Log.Sugar().Infoln(
-		// 	"uri", r.URL.Path,
-		// 	"method", r.Method,
-		// 	"status", responseData.status,
-		// 	"duration", duration,
-		// 	"size", responseData.size,
-		// )
+	host := options.BaseURL
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	var originalURLStruct originalURLStruct
+	err = json.Unmarshal(buf.Bytes(), &originalURLStruct)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if originalURLStruct.URL == "" {
+		http.Error(res, "empty url", http.StatusBadRequest)
+		return
+	}
+
+	shortURL, err := service.GetShortURL(repository, &mutex, originalURLStruct.URL, host)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resultStruct := shortURLResultStruct{Result: shortURL}
+	result, err := json.MarshalIndent(resultStruct, "", "    ")
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("content-type", "application/json")
+	//res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
+	res.WriteHeader(http.StatusCreated)
+	res.Write(result)
+	//logger.Log.Info("Running server", []byte(res))
+	// Log.Sugar().Infoln(
+	// 	"uri", r.URL.Path,
+	// 	"method", r.Method,
+	// 	"status", responseData.status,
+	// 	"duration", duration,
+	// 	"size", responseData.size,
+	// )
+
 }
 
 func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
@@ -151,6 +159,7 @@ func gzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 			cw := newCompressWriter(w)
 			// меняем оригинальный http.ResponseWriter на новый
 			ow = cw
+			// ow.Header().Set("Content-Encoding", "gzip")
 			// не забываем отправить клиенту все сжатые данные после завершения middleware
 			defer cw.Close()
 		}
