@@ -25,6 +25,7 @@ func main() {
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
+	//long := "https://practicum.yandex.ru"
 	data.Set("url", long)
 	// добавляем HTTP-клиент
 	client := &http.Client{}

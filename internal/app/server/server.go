@@ -36,11 +36,11 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Post("/", getShortURL(repository, &mutex, options.BaseURL))
+		r.Post("/", (getShortURL(repository, &mutex, options.BaseURL)))
 		r.Post("/api/shorten", getShortURLJSON(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", getOriginalURL(repository))
 	})
-	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(r.ServeHTTP))
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(gzipMiddleware(r.ServeHTTP)))
 	if err != nil {
 		panic(err)
 	}
@@ -125,5 +125,13 @@ func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host st
 		res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
 		res.WriteHeader(http.StatusCreated)
 		res.Write(result)
+		//logger.Log.Info("Running server", []byte(res))
+		// Log.Sugar().Infoln(
+		// 	"uri", r.URL.Path,
+		// 	"method", r.Method,
+		// 	"status", responseData.status,
+		// 	"duration", duration,
+		// 	"size", responseData.size,
+		// )
 	}
 }
