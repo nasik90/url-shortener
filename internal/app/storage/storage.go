@@ -1,13 +1,22 @@
 package storage
 
 import (
+	"io"
+	"strconv"
+
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+)
+
+var (
+	URLWriterTiFile *Producer
+	CurrentUUID     int
 )
 
 type Repositories interface {
 	SaveShortURL(shortURL, originalURL string) error
 	GetOriginalURL(shortURL string) (string, error)
 	ShortURLUnique(shortURL string) bool
+	RestoreData(filePath string) error
 }
 
 type LocalCache struct {
@@ -32,3 +41,28 @@ func (localCache *LocalCache) ShortURLUnique(shortURL string) bool {
 	_, ok := localCache.CahceMap[shortURL]
 	return !ok
 }
+
+func (localCache *LocalCache) RestoreData(filePath string) error {
+	consumer, err := NewConsumer(filePath)
+	if err != nil {
+		return err
+	}
+	for {
+		event, err := consumer.ReadEvent()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		localCache.SaveShortURL(event.ShortURL, event.OriginalURL)
+		CurrentUUID, err = strconv.Atoi(event.UUID)
+	}
+
+	consumer.Close()
+	return nil
+}
+
+// func (localCache *LocalCache) WriteDataToFile()(
+
+// )

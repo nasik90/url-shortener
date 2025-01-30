@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/rand"
 	"math/big"
+	"strconv"
 	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
@@ -10,12 +11,18 @@ import (
 )
 
 func GetShortURL(repository storage.Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
+	var event storage.Event
 	mutex.Lock()
 	shortURL, err := shortURLWithRetrying(repository)
 	if err != nil {
 		return "", err
 	}
 	repository.SaveShortURL(shortURL, originalURL)
+	storage.CurrentUUID++
+	event.UUID = strconv.Itoa(storage.CurrentUUID)
+	event.ShortURL = shortURL
+	event.OriginalURL = originalURL
+	storage.URLWriterTiFile.WriteEvent(&event)
 	mutex.Unlock()
 
 	shortURLWithHost := shortURLWithHost(host, shortURL)
@@ -68,4 +75,8 @@ func shortURLWithRetrying(repository storage.Repositories) (string, error) {
 		shortURLUnique = repository.ShortURLUnique(shortURL)
 	}
 	return shortURL, nil
+}
+
+func RestoreData(repository storage.Repositories, filePath string) error {
+	return repository.RestoreData(filePath)
 }
