@@ -57,6 +57,9 @@ func (localCache *LocalCache) RestoreData(filePath string) error {
 		}
 		localCache.SaveShortURL(event.ShortURL, event.OriginalURL)
 		CurrentUUID, err = strconv.Atoi(event.UUID)
+		if err != nil {
+			return nil
+		}
 	}
 
 	consumer.Close()
