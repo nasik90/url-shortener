@@ -10,7 +10,6 @@ import (
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	"github.com/nasik90/url-shortener/internal/app/service"
-	"github.com/nasik90/url-shortener/internal/app/storage"
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
@@ -24,13 +23,13 @@ type shortURLResultStruct struct {
 	Result string `json:"result"`
 }
 
-// var (
-// 	mutex      sync.Mutex
-// 	repository storage.Repositories
-// 	options    *settings.Options
-// )
+type repositories interface {
+	SaveShortURL(shortURL, originalURL string) error
+	GetOriginalURL(shortURL string) (string, error)
+	ShortURLUnique(shortURL string) bool
+}
 
-func RunServer(repository storage.Repositories, options *settings.Options) {
+func RunServer(repository repositories, options *settings.Options) {
 
 	var mutex sync.Mutex
 	// options = opt
@@ -48,7 +47,7 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 		logger.Log.Info("Restore data", zap.String("info", "data successfully restored"))
 	}
 
-	storage.URLWriterTiFile, err = storage.NewProducer(options.FilePath)
+	err = service.NewProducer(options.FilePath)
 	if err != nil {
 		logger.Log.Error("Write data", zap.String("info", "error to producer create"), zap.String("error", err.Error()))
 	}
@@ -63,10 +62,13 @@ func RunServer(repository storage.Repositories, options *settings.Options) {
 	if err != nil {
 		panic(err)
 	}
-	storage.URLWriterTiFile.Close()
+	err = service.CloseFile()
+	if err != nil {
+		logger.Log.Error("Write data", zap.String("info", "error to close file"), zap.String("error", err.Error()))
+	}
 }
 
-func getShortURL(repository storage.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+func getShortURL(repository repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
@@ -91,7 +93,7 @@ func getShortURL(repository storage.Repositories, mutex *sync.Mutex, host string
 	}
 }
 
-func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
+func getOriginalURL(repository repositories) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		id := req.RequestURI
 		//if id with "/"
@@ -108,7 +110,7 @@ func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
 	}
 }
 
-func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+func getShortURLJSON(repository repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		// host := options.BaseURL
@@ -147,14 +149,6 @@ func getShortURLJSON(repository storage.Repositories, mutex *sync.Mutex, host st
 		//res.Header().Set("Content-Length", strconv.Itoa(len(string(result))))
 		res.WriteHeader(http.StatusCreated)
 		res.Write(result)
-		//logger.Log.Info("Running server", []byte(res))
-		// Log.Sugar().Infoln(
-		// 	"uri", r.URL.Path,
-		// 	"method", r.Method,
-		// 	"status", responseData.status,
-		// 	"duration", duration,
-		// 	"size", responseData.size,
-		// )
 	}
 }
 

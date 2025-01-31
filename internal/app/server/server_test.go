@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -149,7 +150,7 @@ func TestGetShortURLJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			err := createFileToTest("TestGetShortURL*.txt")
+			err := createFileToTest("TestGetShortURLJSON*.txt")
 			require.NoError(t, err)
 
 			body := httptest.NewRecorder().Body
@@ -182,10 +183,10 @@ func TestGetShortURLJSON(t *testing.T) {
 
 func createFileToTest(fileName string) error {
 
-	file, err := os.CreateTemp("", "TestGetShortURLJSON*.txt")
+	file, err := os.CreateTemp("", fileName)
 	if err != nil {
 		return err
 	}
-	storage.URLWriterTiFile, err = storage.NewProducer(file.Name())
+	err = service.NewProducer(file.Name())
 	return err
 }

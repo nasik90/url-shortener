@@ -1,3 +1,9 @@
 {"uuid":"1","short_url":"kRx3aoie","original_url":"https://yandex.ru"}
 {"uuid":"2","short_url":"NLQe4wYl","original_url":"https://practicum.yandex.ru"}
 {"uuid":"3","short_url":"DhVqQzdG","original_url":"https://yandex.ru"}
+{"uuid":"4","short_url":"5Xv25YdL","original_url":"https://practicum.yandex.ru"}
+{"uuid":"5","short_url":"SHvH7Gr0","original_url":"https://yandex.ru"}
+{"uuid":"6","short_url":"QSkGZUPO","original_url":"https://practicum.yandex.ru"}
+{"uuid":"7","short_url":"9qKuwhMS","original_url":"https://practicum.yandex.ru"}
+{"uuid":"8","short_url":"3bChvGWJ","original_url":"https://practicum.yandex.ru"}
+{"uuid":"9","short_url":"wDz5zzdX","original_url":"https://practicum.yandex.ru"}
