@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -39,6 +40,10 @@ func TestGetShortURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			err := createFileToTest("TestGetShortURL*.txt")
+			require.NoError(t, err)
+
 			body := httptest.NewRecorder().Body
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
@@ -57,6 +62,9 @@ func TestGetShortURL(t *testing.T) {
 			originalURLFromDB, err := localCache.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
+			// storage.URLWriterTiFile.Close()
+			// err = os.Remove(file.Name())
+			// require.NoError(t, err)
 		})
 	}
 }
@@ -140,6 +148,10 @@ func TestGetShortURLJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			err := createFileToTest("TestGetShortURL*.txt")
+			require.NoError(t, err)
+
 			body := httptest.NewRecorder().Body
 			originalURLJSON, _ := json.Marshal(&tt.originalURLStruct)
 			body.Write(originalURLJSON)
@@ -166,4 +178,14 @@ func TestGetShortURLJSON(t *testing.T) {
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
 	}
+}
+
+func createFileToTest(fileName string) error {
+
+	file, err := os.CreateTemp("", "TestGetShortURLJSON*.txt")
+	if err != nil {
+		return err
+	}
+	storage.URLWriterTiFile, err = storage.NewProducer(file.Name())
+	return err
 }
