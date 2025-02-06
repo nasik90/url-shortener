@@ -2,13 +2,10 @@ package service
 
 import (
 	"crypto/rand"
-	"io"
 	"math/big"
-	"strconv"
 	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
-	"github.com/nasik90/url-shortener/internal/app/storage"
 )
 
 type repositories interface {
@@ -17,10 +14,10 @@ type repositories interface {
 	ShortURLUnique(shortURL string) bool
 }
 
-var (
-	URLWriterToFile *storage.Producer
-	CurrentUUID     int
-)
+// var (
+// 	URLWriterToFile *storage.Producer
+// 	CurrentUUID     int
+// )
 
 func GetShortURL(repository repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
 	mutex.Lock()
@@ -29,21 +26,21 @@ func GetShortURL(repository repositories, mutex *sync.Mutex, originalURL, host s
 		return "", err
 	}
 	repository.SaveShortURL(shortURL, originalURL)
-	saveShortURLToFile(shortURL, originalURL)
+	// saveShortURLToFile(shortURL, originalURL)
 	mutex.Unlock()
 
 	shortURLWithHost := shortURLWithHost(host, shortURL)
 	return shortURLWithHost, nil
 }
 
-func saveShortURLToFile(shortURL string, originalURL string) {
-	var event storage.Event
-	CurrentUUID++
-	event.UUID = strconv.Itoa(CurrentUUID)
-	event.ShortURL = shortURL
-	event.OriginalURL = originalURL
-	URLWriterToFile.WriteEvent(&event)
-}
+// func saveShortURLToFile(shortURL string, originalURL string) {
+// 	var event storage.Event
+// 	CurrentUUID++
+// 	event.UUID = strconv.Itoa(CurrentUUID)
+// 	event.ShortURL = shortURL
+// 	event.OriginalURL = originalURL
+// 	URLWriterToFile.WriteEvent(&event)
+// }
 
 func GetOriginalURL(repository repositories, shortURL string) (string, error) {
 
@@ -56,7 +53,6 @@ func GetOriginalURL(repository repositories, shortURL string) (string, error) {
 }
 
 func randomString(charCount int) (res string, err error) {
-
 	template := []rune(settings.TemplateForRand)
 	templateLen := len(template)
 	resChar := make([]rune, charCount)
@@ -70,7 +66,6 @@ func randomString(charCount int) (res string, err error) {
 	}
 
 	return string(resChar), nil
-
 }
 
 func shortURLWithHost(host, randomString string) string {
@@ -93,35 +88,37 @@ func shortURLWithRetrying(repository repositories) (string, error) {
 	return shortURL, nil
 }
 
-func RestoreData(repository repositories, filePath string) error {
-	consumer, err := storage.NewConsumer(filePath)
-	if err != nil {
-		return err
-	}
-	for {
-		event, err := consumer.ReadEvent()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		repository.SaveShortURL(event.ShortURL, event.OriginalURL)
-		CurrentUUID, err = strconv.Atoi(event.UUID)
-		if err != nil {
-			return nil
-		}
-	}
+// func RestoreData(repository repositories, filePath string) error {
+// 	consumer, err := storage.NewConsumer(filePath)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for {
+// 		event, err := consumer.ReadEvent()
+// 		if err != nil {
+// 			if err == io.EOF {
+// 				break
+// 			}
+// 			return err
+// 		}
+// 		err = repository.SaveShortURL(event.ShortURL, event.OriginalURL)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		CurrentUUID, err = strconv.Atoi(event.UUID)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
 
-	consumer.Close()
-	return nil
-}
+// 	consumer.Close()
+// 	return nil
+// }
 
-func NewProducer(FilePath string) (err error) {
-	URLWriterToFile, err = storage.NewProducer(FilePath)
-	return err
-}
+// func NewProducer(FilePath string) (*storage.Producer, error) {
+// 	return storage.NewProducer(FilePath)
+// }
 
-func CloseFile() error {
-	return URLWriterToFile.Close()
-}
+// func DestroyProducer(producer *storage.Producer) error {
+// 	return producer.Close()
+// }

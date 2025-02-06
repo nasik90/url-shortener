@@ -40,17 +40,17 @@ func RunServer(repository repositories, options *settings.Options) {
 
 	logger.Log.Info("Running server", zap.String("address", options.ServerAddress))
 
-	err := service.RestoreData(repository, options.FilePath)
-	if err != nil {
-		logger.Log.Error("Restore data", zap.String("error", err.Error()))
-	} else {
-		logger.Log.Info("Restore data", zap.String("info", "data successfully restored"))
-	}
+	// err := service.RestoreData(repository, options.FilePath)
+	// if err != nil {
+	// 	logger.Log.Error("Restore data", zap.String("error", err.Error()))
+	// } else {
+	// 	logger.Log.Info("Restore data", zap.String("info", "data successfully restored"))
+	// }
 
-	err = service.NewProducer(options.FilePath)
-	if err != nil {
-		logger.Log.Error("Write data", zap.String("info", "error to producer create"), zap.String("error", err.Error()))
-	}
+	//producer, err := service.NewProducer(options.FilePath)
+	// if err != nil {
+	// 	logger.Log.Error("Write data", zap.String("info", "error to producer create"), zap.String("error", err.Error()))
+	// }
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
@@ -58,14 +58,14 @@ func RunServer(repository repositories, options *settings.Options) {
 		r.Post("/api/shorten", getShortURLJSON(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", getOriginalURL(repository))
 	})
-	err = http.ListenAndServe(options.ServerAddress, logger.RequestLogger(gzipMiddleware(r.ServeHTTP)))
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(gzipMiddleware(r.ServeHTTP)))
 	if err != nil {
 		panic(err)
 	}
-	err = service.CloseFile()
-	if err != nil {
-		logger.Log.Error("Write data", zap.String("info", "error to close file"), zap.String("error", err.Error()))
-	}
+	// err = service.DestroyProducer(producer)
+	// if err != nil {
+	// 	logger.Log.Error("Write data", zap.String("info", "error to close file"), zap.String("error", err.Error()))
+	// }
 }
 
 func getShortURL(repository repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
