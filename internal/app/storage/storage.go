@@ -77,7 +77,7 @@ func (fileStorage *FileStorage) GetOriginalURL(shortURL string) (string, error) 
 }
 
 func (fileStorage *FileStorage) ShortURLUnique(shortURL string) bool {
-	return fileStorage.ShortURLUnique(shortURL)
+	return fileStorage.localCache.ShortURLUnique(shortURL)
 }
 
 func restoreData(fileStorage *FileStorage) error {

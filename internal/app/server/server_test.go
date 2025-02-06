@@ -11,15 +11,14 @@ import (
 	"testing"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
-	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetShortURL(t *testing.T) {
-	cache := make(map[string]string)
-	localCache := storage.LocalCache{CahceMap: cache}
+	//cache := make(map[string]string)
+	//localCache := storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
 	type want struct {
 		code              int
@@ -42,14 +41,14 @@ func TestGetShortURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			err := createFileToTest("TestGetShortURL*.txt")
+			storage, err := createFileStorage("TestGetShortURL*.txt")
 			require.NoError(t, err)
 
 			body := httptest.NewRecorder().Body
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			getShortURL(&localCache, &mutex, request.Host)(w, request)
+			getShortURL(storage, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -60,7 +59,7 @@ func TestGetShortURL(t *testing.T) {
 			require.NoError(t, err)
 			resBodyString := string(resBody)
 			shortURL := string(resBody)[len(resBodyString)-settings.ShortURLlen:]
-			originalURLFromDB, err := localCache.GetOriginalURL(shortURL)
+			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 			// storage.URLWriterTiFile.Close()
@@ -126,8 +125,8 @@ func TestGetOriginalURL(t *testing.T) {
 }
 
 func TestGetShortURLJSON(t *testing.T) {
-	cache := make(map[string]string)
-	localCache := storage.LocalCache{CahceMap: cache}
+	//cache := make(map[string]string)
+	//localCache := storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
 	type want struct {
 		code              int
@@ -150,7 +149,7 @@ func TestGetShortURLJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			err := createFileToTest("TestGetShortURLJSON*.txt")
+			storage, err := createFileStorage("TestGetShortURLJSON*.txt")
 			require.NoError(t, err)
 
 			body := httptest.NewRecorder().Body
@@ -158,7 +157,7 @@ func TestGetShortURLJSON(t *testing.T) {
 			body.Write(originalURLJSON)
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			getShortURLJSON(&localCache, &mutex, request.Host)(w, request)
+			getShortURLJSON(storage, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -174,19 +173,23 @@ func TestGetShortURLJSON(t *testing.T) {
 			require.NoError(t, err)
 
 			shortURL := shortURLResultStruct.Result[len(shortURLResultStruct.Result)-settings.ShortURLlen:]
-			originalURLFromDB, err := localCache.GetOriginalURL(shortURL)
+			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
 	}
 }
 
-func createFileToTest(fileName string) error {
+func createFileStorage(fileName string) (*storage.FileStorage, error) {
 
 	file, err := os.CreateTemp("", fileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = service.NewProducer(file.Name())
-	return err
+	//err = service.NewProducer(file.Name())
+	return storage.NewFileStorage(file.Name())
+	// if err != nil {
+	// 	panic(err)
+	// }
+	//return err
 }

@@ -7,3 +7,6 @@
 {"uuid":"7","short_url":"9qKuwhMS","original_url":"https://practicum.yandex.ru"}
 {"uuid":"8","short_url":"3bChvGWJ","original_url":"https://practicum.yandex.ru"}
 {"uuid":"9","short_url":"wDz5zzdX","original_url":"https://practicum.yandex.ru"}
+{"uuid":"10","short_url":"br7prKTJ","original_url":"https://practicum.yandex.ru"}
+{"uuid":"11","short_url":"XJmQ3JYV","original_url":"https://practicum.yandex.ru"}
+{"uuid":"12","short_url":"SrIV5Ill","original_url":"https://practicum.yandex.ru"}
