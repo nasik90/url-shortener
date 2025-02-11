@@ -25,7 +25,7 @@ func (localCache *LocalCache) GetOriginalURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (localCache *LocalCache) ShortURLUnique(shortURL string) bool {
+func (localCache *LocalCache) IsUnique(shortURL string) bool {
 	_, ok := localCache.CahceMap[shortURL]
 	return !ok
 }
@@ -76,8 +76,8 @@ func (fileStorage *FileStorage) GetOriginalURL(shortURL string) (string, error) 
 	return fileStorage.localCache.GetOriginalURL(shortURL)
 }
 
-func (fileStorage *FileStorage) ShortURLUnique(shortURL string) bool {
-	return fileStorage.localCache.ShortURLUnique(shortURL)
+func (fileStorage *FileStorage) IsUnique(shortURL string) bool {
+	return fileStorage.localCache.IsUnique(shortURL)
 }
 
 func restoreData(fileStorage *FileStorage) error {

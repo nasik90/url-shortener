@@ -12,9 +12,6 @@ func main() {
 	options := new(settings.Options)
 	settings.ParseFlags(options)
 
-	// cache := make(map[string]string)
-	// localCache := &storage.LocalCache{CahceMap: cache}
-	// server.RunServer(localCache, options)
 	storage, err := storage.NewFileStorage(options.FilePath)
 	if err != nil {
 		panic(err)
@@ -25,5 +22,8 @@ func main() {
 			logger.Log.Error("destroy file storage", zap.String("info", "error to destroy file storage"), zap.String("error", err.Error()))
 		}
 	}()
-	server.RunServer(storage, options)
+	err = server.RunServer(storage, options)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"encoding/json"
@@ -17,8 +17,6 @@ import (
 )
 
 func TestGetShortURL(t *testing.T) {
-	//cache := make(map[string]string)
-	//localCache := storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
 	type want struct {
 		code              int
@@ -48,7 +46,7 @@ func TestGetShortURL(t *testing.T) {
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			getShortURL(storage, &mutex, request.Host)(w, request)
+			GetShortURL(storage, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -62,9 +60,6 @@ func TestGetShortURL(t *testing.T) {
 			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
-			// storage.URLWriterTiFile.Close()
-			// err = os.Remove(file.Name())
-			// require.NoError(t, err)
 		})
 	}
 }
@@ -109,7 +104,7 @@ func TestGetOriginalURL(t *testing.T) {
 
 			request := httptest.NewRequest(http.MethodGet, "/"+tt.shortURL, nil)
 			w := httptest.NewRecorder()
-			getOriginalURL(&localCache)(w, request)
+			GetOriginalURL(&localCache)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -125,21 +120,25 @@ func TestGetOriginalURL(t *testing.T) {
 }
 
 func TestGetShortURLJSON(t *testing.T) {
-	//cache := make(map[string]string)
-	//localCache := storage.LocalCache{CahceMap: cache}
 	var mutex sync.Mutex
+	type input struct {
+		URL string `json:"url"`
+	}
+	type output struct {
+		Result string `json:"result"`
+	}
 	type want struct {
 		code              int
 		originalURLFromDB string
 	}
 	tests := []struct {
 		name              string
-		originalURLStruct originalURLStruct
+		originalURLStruct input
 		want              want
 	}{
 		{
 			name:              "positive test #1",
-			originalURLStruct: originalURLStruct{URL: "https://practicum.yandex.ru/"},
+			originalURLStruct: input{URL: "https://practicum.yandex.ru/"},
 			want: want{
 				code:              http.StatusCreated,
 				originalURLFromDB: "https://practicum.yandex.ru/",
@@ -157,7 +156,7 @@ func TestGetShortURLJSON(t *testing.T) {
 			body.Write(originalURLJSON)
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			getShortURLJSON(storage, &mutex, request.Host)(w, request)
+			GetShortURLJSON(storage, &mutex, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -166,13 +165,11 @@ func TestGetShortURLJSON(t *testing.T) {
 			resBody, err := io.ReadAll(res.Body)
 
 			require.NoError(t, err)
-			// resBodyString := string(resBody)
-			// shortURLJSON := string(resBody)[len(resBodyString)-settings.ShortURLlen:]
-			var shortURLResultStruct shortURLResultStruct
-			err = json.Unmarshal(resBody, &shortURLResultStruct)
+			var output output
+			err = json.Unmarshal(resBody, &output)
 			require.NoError(t, err)
 
-			shortURL := shortURLResultStruct.Result[len(shortURLResultStruct.Result)-settings.ShortURLlen:]
+			shortURL := output.Result[len(output.Result)-settings.ShortURLlen:]
 			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
@@ -186,10 +183,5 @@ func createFileStorage(fileName string) (*storage.FileStorage, error) {
 	if err != nil {
 		return nil, err
 	}
-	//err = service.NewProducer(file.Name())
 	return storage.NewFileStorage(file.Name())
-	// if err != nil {
-	// 	panic(err)
-	// }
-	//return err
 }

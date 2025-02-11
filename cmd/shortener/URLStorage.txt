@@ -10,3 +10,12 @@
 {"uuid":"10","short_url":"br7prKTJ","original_url":"https://practicum.yandex.ru"}
 {"uuid":"11","short_url":"XJmQ3JYV","original_url":"https://practicum.yandex.ru"}
 {"uuid":"12","short_url":"SrIV5Ill","original_url":"https://practicum.yandex.ru"}
+{"uuid":"13","short_url":"ivEfCoYs","original_url":"https://practicum.yandex.ru"}
+{"uuid":"14","short_url":"sXCbiaqY","original_url":"https://practicum.yandex.ru"}
+{"uuid":"15","short_url":"FMsZdA4q","original_url":"https://practicum.yandex.ru"}
+{"uuid":"16","short_url":"NXZMp2wG","original_url":"https://practicum.yandex.ru"}
+{"uuid":"17","short_url":"abRZMXoi","original_url":"https://practicum.yandex.ru"}
+{"uuid":"18","short_url":"DT8s7vlU","original_url":"https://practicum.yandex.ru"}
+{"uuid":"19","short_url":"QmKpX0g7","original_url":"https://practicum.yandex.ru"}
+{"uuid":"20","short_url":"um7OUC0b","original_url":"https://practicum.yandex.ru"}
+{"uuid":"21","short_url":"m9rQRd7f","original_url":"https://practicum.yandex.ru"}

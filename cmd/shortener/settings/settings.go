@@ -26,7 +26,7 @@ func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
-	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "log level")
+	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
