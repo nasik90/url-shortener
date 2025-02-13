@@ -19,3 +19,5 @@
 {"uuid":"19","short_url":"QmKpX0g7","original_url":"https://practicum.yandex.ru"}
 {"uuid":"20","short_url":"um7OUC0b","original_url":"https://practicum.yandex.ru"}
 {"uuid":"21","short_url":"m9rQRd7f","original_url":"https://practicum.yandex.ru"}
+{"uuid":"22","short_url":"Qle0MGIJ","original_url":"https://practicum.yandex.ru"}
+{"uuid":"23","short_url":"8BJ7v2d9","original_url":"https://practicum.yandex.ru"}
