@@ -11,13 +11,13 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/service"
 )
 
-type Repositories interface {
-	SaveShortURL(shortURL, originalURL string) error
-	GetOriginalURL(shortURL string) (string, error)
-	IsUnique(shortURL string) bool
-}
+// type Repositories interface {
+// 	SaveShortURL(shortURL, originalURL string) error
+// 	GetOriginalURL(shortURL string) (string, error)
+// 	IsUnique(shortURL string) bool
+// }
 
-func GetShortURL(repository Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
@@ -41,7 +41,7 @@ func GetShortURL(repository Repositories, mutex *sync.Mutex, host string) http.H
 	}
 }
 
-func GetOriginalURL(repository Repositories) http.HandlerFunc {
+func GetOriginalURL(repository service.Repositories) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		id := req.RequestURI
 		//if id with "/"
@@ -58,7 +58,7 @@ func GetOriginalURL(repository Repositories) http.HandlerFunc {
 	}
 }
 
-func GetShortURLJSON(repository Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+func GetShortURLJSON(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var input struct {
 			URL string `json:"url"`
@@ -130,5 +130,36 @@ func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 
 		// передаём управление хендлеру
 		h.ServeHTTP(ow, r)
+	}
+}
+
+// func Ping(databaseDSN string) http.HandlerFunc {
+// 	return func(res http.ResponseWriter, req *http.Request) {
+// 		conn, err := sql.Open("pgx", databaseDSN)
+// 		if err != nil {
+// 			http.Error(res, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+// 		err = conn.Ping()
+// 		if err != nil {
+// 			http.Error(res, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+// 	}
+// }
+
+func Ping(repository service.Repositories) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		err := repository.Ping()
+		// conn, err := sql.Open("pgx", databaseDSN)
+		// if err != nil {
+		// 	http.Error(res, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		//err := conn.Ping()
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }

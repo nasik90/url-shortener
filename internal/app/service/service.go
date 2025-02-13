@@ -8,13 +8,14 @@ import (
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
-type repositories interface {
+type Repositories interface {
 	SaveShortURL(shortURL, originalURL string) error
 	GetOriginalURL(shortURL string) (string, error)
 	IsUnique(shortURL string) bool
+	Ping() error
 }
 
-func GetShortURL(repository repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
+func GetShortURL(repository Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
 	mutex.Lock()
 	shortURL, err := shortURLWithRetrying(repository)
 	if err != nil {
@@ -27,7 +28,7 @@ func GetShortURL(repository repositories, mutex *sync.Mutex, originalURL, host s
 	return shortURLWithHost, nil
 }
 
-func GetOriginalURL(repository repositories, shortURL string) (string, error) {
+func GetOriginalURL(repository Repositories, shortURL string) (string, error) {
 
 	originalURL, err := repository.GetOriginalURL(shortURL)
 	if err != nil {
@@ -57,7 +58,7 @@ func shortURLWithHost(host, randomString string) string {
 	return host + "/" + randomString
 }
 
-func shortURLWithRetrying(repository repositories) (string, error) {
+func shortURLWithRetrying(repository Repositories) (string, error) {
 	shortURL := ""
 	shortURLUnique := false
 	for !shortURLUnique {

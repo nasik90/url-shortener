@@ -20,6 +20,7 @@ type Options struct {
 	BaseURL       string
 	LogLevel      string
 	FilePath      string
+	DatabaseDSN   string
 }
 
 func ParseFlags(o *Options) {
@@ -27,6 +28,7 @@ func ParseFlags(o *Options) {
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
+	flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxx dbname=postgres sslmode=disable", "database connection string")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
@@ -40,5 +42,8 @@ func ParseFlags(o *Options) {
 	}
 	if filePath := os.Getenv("FILE_STORAGE_PATH"); filePath != "" {
 		o.FilePath = filePath
+	}
+	if databaseDSN := os.Getenv("DATABASE_DSN"); databaseDSN != "" {
+		o.DatabaseDSN = databaseDSN
 	}
 }

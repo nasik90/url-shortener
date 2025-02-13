@@ -30,6 +30,10 @@ func (localCache *LocalCache) IsUnique(shortURL string) bool {
 	return !ok
 }
 
+func (localCache *LocalCache) Ping() error {
+	return nil
+}
+
 type FileStorage struct {
 	localCache  *LocalCache
 	CurrentUUID int
@@ -100,5 +104,9 @@ func restoreData(fileStorage *FileStorage) error {
 	}
 
 	fileStorage.Consumer.Close()
+	return nil
+}
+
+func (fileStorage *FileStorage) Ping() error {
 	return nil
 }
