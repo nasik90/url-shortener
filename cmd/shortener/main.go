@@ -4,7 +4,6 @@ import (
 	"database/sql"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/server"
 	"github.com/nasik90/url-shortener/internal/app/service"
