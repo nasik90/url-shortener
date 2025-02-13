@@ -11,15 +11,10 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/service"
 )
 
-// type Repositories interface {
-// 	SaveShortURL(shortURL, originalURL string) error
-// 	GetOriginalURL(shortURL string) (string, error)
-// 	IsUnique(shortURL string) bool
-// }
-
 func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
+		ctx := req.Context()
 		_, err := buf.ReadFrom(req.Body)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -30,7 +25,7 @@ func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string
 			http.Error(res, "empty url", http.StatusBadRequest)
 			return
 		}
-		shortURL, err := service.GetShortURL(repository, mutex, originalURL, host)
+		shortURL, err := service.GetShortURL(ctx, repository, mutex, originalURL, host)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -43,12 +38,13 @@ func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string
 
 func GetOriginalURL(repository service.Repositories) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 		id := req.RequestURI
 		//if id with "/"
 		if len(id) == settings.ShortURLlen+1 {
 			id = id[1:]
 		}
-		originalURL, err := service.GetOriginalURL(repository, id)
+		originalURL, err := service.GetOriginalURL(ctx, repository, id)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusNotFound)
 			return
@@ -60,6 +56,7 @@ func GetOriginalURL(repository service.Repositories) http.HandlerFunc {
 
 func GetShortURLJSON(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 		var input struct {
 			URL string `json:"url"`
 		}
@@ -73,7 +70,7 @@ func GetShortURLJSON(repository service.Repositories, mutex *sync.Mutex, host st
 			return
 		}
 
-		shortURL, err := service.GetShortURL(repository, mutex, input.URL, host)
+		shortURL, err := service.GetShortURL(ctx, repository, mutex, input.URL, host)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -133,30 +130,9 @@ func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// func Ping(databaseDSN string) http.HandlerFunc {
-// 	return func(res http.ResponseWriter, req *http.Request) {
-// 		conn, err := sql.Open("pgx", databaseDSN)
-// 		if err != nil {
-// 			http.Error(res, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		err = conn.Ping()
-// 		if err != nil {
-// 			http.Error(res, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 	}
-// }
-
 func Ping(repository service.Repositories) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		err := repository.Ping()
-		// conn, err := sql.Open("pgx", databaseDSN)
-		// if err != nil {
-		// 	http.Error(res, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
-		//err := conn.Ping()
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return

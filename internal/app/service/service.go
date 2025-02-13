@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"math/big"
 	"sync"
@@ -9,28 +10,31 @@ import (
 )
 
 type Repositories interface {
-	SaveShortURL(shortURL, originalURL string) error
-	GetOriginalURL(shortURL string) (string, error)
-	IsUnique(shortURL string) bool
+	SaveShortURL(ctx context.Context, shortURL, originalURL string) error
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	IsUnique(ctx context.Context, shortURL string) (bool, error)
 	Ping() error
 }
 
-func GetShortURL(repository Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
+func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
 	mutex.Lock()
-	shortURL, err := shortURLWithRetrying(repository)
+	defer mutex.Unlock()
+	shortURL, err := shortURLWithRetrying(ctx, repository)
 	if err != nil {
 		return "", err
 	}
-	repository.SaveShortURL(shortURL, originalURL)
-	mutex.Unlock()
+	err = repository.SaveShortURL(ctx, shortURL, originalURL)
+	if err != nil {
+		return "", err
+	}
 
 	shortURLWithHost := shortURLWithHost(host, shortURL)
 	return shortURLWithHost, nil
 }
 
-func GetOriginalURL(repository Repositories, shortURL string) (string, error) {
+func GetOriginalURL(ctx context.Context, repository Repositories, shortURL string) (string, error) {
 
-	originalURL, err := repository.GetOriginalURL(shortURL)
+	originalURL, err := repository.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +62,7 @@ func shortURLWithHost(host, randomString string) string {
 	return host + "/" + randomString
 }
 
-func shortURLWithRetrying(repository Repositories) (string, error) {
+func shortURLWithRetrying(ctx context.Context, repository Repositories) (string, error) {
 	shortURL := ""
 	shortURLUnique := false
 	for !shortURLUnique {
@@ -67,7 +71,10 @@ func shortURLWithRetrying(repository Repositories) (string, error) {
 			return "", err
 		}
 		shortURL = randomString
-		shortURLUnique = repository.IsUnique(shortURL)
+		shortURLUnique, err = repository.IsUnique(ctx, shortURL)
+		if err != nil {
+			return "", err
+		}
 	}
 	return shortURL, nil
 }

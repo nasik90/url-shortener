@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"io"
 	"strconv"
 
@@ -11,12 +12,12 @@ type LocalCache struct {
 	CahceMap map[string]string
 }
 
-func (localCache *LocalCache) SaveShortURL(shortURL, originalURL string) error {
+func (localCache *LocalCache) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
 	localCache.CahceMap[shortURL] = originalURL
 	return nil
 }
 
-func (localCache *LocalCache) GetOriginalURL(shortURL string) (string, error) {
+func (localCache *LocalCache) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	originalURL, ok := localCache.CahceMap[shortURL]
 	if !ok {
 		err := settings.ErrOriginalURLNotFound
@@ -25,9 +26,9 @@ func (localCache *LocalCache) GetOriginalURL(shortURL string) (string, error) {
 	return originalURL, nil
 }
 
-func (localCache *LocalCache) IsUnique(shortURL string) bool {
+func (localCache *LocalCache) IsUnique(ctx context.Context, shortURL string) (bool, error) {
 	_, ok := localCache.CahceMap[shortURL]
-	return !ok
+	return !ok, nil
 }
 
 func (localCache *LocalCache) Ping() error {
@@ -66,25 +67,26 @@ func (fileStorage *FileStorage) DestroyFileStorage() error {
 	return fileStorage.Producer.Close()
 }
 
-func (fileStorage *FileStorage) SaveShortURL(shortURL, originalURL string) error {
+func (fileStorage *FileStorage) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
 	var event Event
 	fileStorage.CurrentUUID++
 	event.UUID = strconv.Itoa(fileStorage.CurrentUUID)
 	event.ShortURL = shortURL
 	event.OriginalURL = originalURL
 	fileStorage.Producer.WriteEvent(&event)
-	return fileStorage.localCache.SaveShortURL(shortURL, originalURL)
+	return fileStorage.localCache.SaveShortURL(ctx, shortURL, originalURL)
 }
 
-func (fileStorage *FileStorage) GetOriginalURL(shortURL string) (string, error) {
-	return fileStorage.localCache.GetOriginalURL(shortURL)
+func (fileStorage *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return fileStorage.localCache.GetOriginalURL(ctx, shortURL)
 }
 
-func (fileStorage *FileStorage) IsUnique(shortURL string) bool {
-	return fileStorage.localCache.IsUnique(shortURL)
+func (fileStorage *FileStorage) IsUnique(ctx context.Context, shortURL string) (bool, error) {
+	return fileStorage.localCache.IsUnique(ctx, shortURL)
 }
 
 func restoreData(fileStorage *FileStorage) error {
+	ctx := context.Background()
 	for {
 		event, err := fileStorage.Consumer.ReadEvent()
 		if err != nil {
@@ -93,7 +95,7 @@ func restoreData(fileStorage *FileStorage) error {
 			}
 			return err
 		}
-		err = fileStorage.localCache.SaveShortURL(event.ShortURL, event.OriginalURL)
+		err = fileStorage.localCache.SaveShortURL(ctx, event.ShortURL, event.OriginalURL)
 		if err != nil {
 			return err
 		}

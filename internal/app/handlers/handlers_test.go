@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 
 func TestGetShortURL(t *testing.T) {
 	var mutex sync.Mutex
+	ctx := context.Background()
 	type want struct {
 		code              int
 		originalURLFromDB string
@@ -57,7 +59,7 @@ func TestGetShortURL(t *testing.T) {
 			require.NoError(t, err)
 			resBodyString := string(resBody)
 			shortURL := string(resBody)[len(resBodyString)-settings.ShortURLlen:]
-			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
+			originalURLFromDB, err := storage.GetOriginalURL(ctx, shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
@@ -65,6 +67,7 @@ func TestGetShortURL(t *testing.T) {
 }
 
 func TestGetOriginalURL(t *testing.T) {
+	ctx := context.Background()
 	cache := make(map[string]string)
 	localCache := storage.LocalCache{CahceMap: cache}
 	type want struct {
@@ -99,7 +102,7 @@ func TestGetOriginalURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if len(tt.shortURL) > 0 {
-				localCache.SaveShortURL(tt.shortURL, tt.originalURL)
+				localCache.SaveShortURL(ctx, tt.shortURL, tt.originalURL)
 			}
 
 			request := httptest.NewRequest(http.MethodGet, "/"+tt.shortURL, nil)
@@ -120,6 +123,7 @@ func TestGetOriginalURL(t *testing.T) {
 }
 
 func TestGetShortURLJSON(t *testing.T) {
+	ctx := context.Background()
 	var mutex sync.Mutex
 	type input struct {
 		URL string `json:"url"`
@@ -170,7 +174,7 @@ func TestGetShortURLJSON(t *testing.T) {
 			require.NoError(t, err)
 
 			shortURL := output.Result[len(output.Result)-settings.ShortURLlen:]
-			originalURLFromDB, err := storage.GetOriginalURL(shortURL)
+			originalURLFromDB, err := storage.GetOriginalURL(ctx, shortURL)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})

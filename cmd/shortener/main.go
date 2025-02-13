@@ -28,7 +28,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	storage := pg.NewStore(conn)
+	storage, err := pg.NewStore(conn)
+	if err != nil {
+		panic(err)
+	}
+	// storage := pg.NewStore(options.DatabaseDSN)
 	err = server.RunServer(storage, options)
 	if err != nil {
 		panic(err)
