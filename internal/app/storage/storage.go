@@ -35,6 +35,20 @@ func (localCache *LocalCache) Ping() error {
 	return nil
 }
 
+func (localCache *LocalCache) Close() error {
+	return nil
+}
+
+func (localCache *LocalCache) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+	for shortURL, originalURL := range shortOriginalURLs {
+		err := localCache.SaveShortURL(ctx, shortURL, originalURL)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type FileStorage struct {
 	localCache  *LocalCache
 	CurrentUUID int
@@ -63,7 +77,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	return fileStorage, nil
 }
 
-func (fileStorage *FileStorage) DestroyFileStorage() error {
+func (fileStorage *FileStorage) Close() error {
 	return fileStorage.Producer.Close()
 }
 
@@ -110,5 +124,15 @@ func restoreData(fileStorage *FileStorage) error {
 }
 
 func (fileStorage *FileStorage) Ping() error {
+	return nil
+}
+
+func (fileStorage *FileStorage) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+	for shortURL, originalURL := range shortOriginalURLs {
+		err := fileStorage.SaveShortURL(ctx, shortURL, originalURL)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

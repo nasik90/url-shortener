@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -10,6 +11,16 @@ import (
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/service"
 )
+
+// type MyStruct struct {
+// 	Repository service.Repositories
+// 	Mutex      sync.Mutex
+// 	Host       string
+// }
+
+// func (m *MyStruct) GetShortURL(res http.ResponseWriter, req *http.Request){
+
+// }
 
 func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -137,5 +148,48 @@ func Ping(repository service.Repositories) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+func GetShortURLs(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		type input struct {
+			Сorrelation_id string `json:"correlation_id"`
+			Original_url   string `json:"original_url"`
+		}
+		var s []input
+		if err := json.NewDecoder(req.Body).Decode(&s); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		originalURLs := make(map[string]string)
+		for _, in := range s {
+			originalURLs[in.Сorrelation_id] = in.Original_url
+		}
+		shortURLs, err := service.GetShortURLs(ctx, repository, mutex, originalURLs, host)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Println(shortURLs)
+		type output struct {
+			Сorrelation_id string `json:"correlation_id"`
+			Short_url      string `json:"short_url"`
+		}
+		var o []output
+		for corId, shortURL := range shortURLs {
+			o = append(o, output{Сorrelation_id: corId, Short_url: shortURL})
+		}
+
+		result, err := json.MarshalIndent(o, "", "    ")
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(http.StatusCreated)
+		res.Write(result)
 	}
 }

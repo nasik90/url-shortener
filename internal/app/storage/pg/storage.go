@@ -18,14 +18,9 @@ func NewStore(conn *sql.DB) (*Store, error) {
 	return s, nil
 }
 
-// func NewStore(databaseDSN string) (*Store, error) {
-// 	conn, err := sql.Open("pgx", databaseDSN)
-// 	if err != nil {
-// 		return &Store{}, err
-// 	}
-// 	if conn.Ping() != nil{}
-// 	return &Store{conn: conn}, nil
-// }
+func (s Store) Close() error {
+	return s.conn.Close()
+}
 
 // Bootstrap подготавливает БД к работе, создавая необходимые таблицы и индексы
 func (s Store) Bootstrap(ctx context.Context) error {
@@ -62,7 +57,7 @@ func (s Store) Bootstrap(ctx context.Context) error {
             originalurl varchar(512)
         )
     `)
-	tx.ExecContext(ctx, `CREATE INDEX originalurl_idx ON urlstorage (originalurl)`)
+	//tx.ExecContext(ctx, `CREATE INDEX originalurl_idx ON urlstorage (originalurl)`)
 
 	// коммитим транзакцию
 	return tx.Commit()
@@ -107,6 +102,44 @@ func (s *Store) IsUnique(ctx context.Context, shortURL string) (bool, error) {
 		return false, err
 	}
 	return false, nil
+}
+
+func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+	// ctx := context.Background()
+	shortOriginalURLBatch := make(map[string]string)
+	i := 0
+	for shortURL, originalURL := range shortOriginalURLs {
+		if i == 1000 {
+			err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch)
+			if err != nil {
+				return err
+			}
+			shortOriginalURLBatch = make(map[string]string)
+		}
+		shortOriginalURLBatch[shortURL] = originalURL
+		i++
+	}
+	err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch)
+	return err
+}
+
+func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch map[string]string) error {
+	tx, err := s.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO urlstorage (shortURL, originalURL) VALUES ($1, $2)")
+	if err != nil {
+		return err
+	}
+	for shortURL, originalURL := range shortOriginalURLBatch {
+		_, err := stmt.ExecContext(ctx, shortURL, originalURL)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (s *Store) Ping() error {

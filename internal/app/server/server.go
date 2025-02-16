@@ -30,6 +30,7 @@ func RunServer(repository service.Repositories, options *settings.Options) error
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.GetShortURL(repository, &mutex, options.BaseURL))
 		r.Post("/api/shorten", handlers.GetShortURLJSON(repository, &mutex, options.BaseURL))
+		r.Post("/api/shorten/batch", handlers.GetShortURLs(repository, &mutex, options.BaseURL))
 		r.Get("/{id}", handlers.GetOriginalURL(repository))
 		r.Get("/ping", handlers.Ping(repository))
 	})
