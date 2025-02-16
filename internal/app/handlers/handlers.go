@@ -172,8 +172,8 @@ func GetShortURLs(repository service.Repositories, mutex *sync.Mutex, host strin
 			ShortURL      string `json:"short_url"`
 		}
 		var o []output
-		for corId, shortURL := range shortURLs {
-			o = append(o, output{СorrelationID: corId, ShortURL: shortURL})
+		for corID, shortURL := range shortURLs {
+			o = append(o, output{СorrelationID: corID, ShortURL: shortURL})
 		}
 
 		result, err := json.MarshalIndent(o, "", "    ")
