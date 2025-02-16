@@ -12,10 +12,6 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/service"
 )
 
-// func (m *MyStruct) GetShortURL(res http.ResponseWriter, req *http.Request){
-
-// }
-
 func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
