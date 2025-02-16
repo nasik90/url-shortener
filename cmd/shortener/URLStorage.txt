@@ -23,3 +23,5 @@
 {"uuid":"23","short_url":"8BJ7v2d9","original_url":"https://practicum.yandex.ru"}
 {"uuid":"24","short_url":"FZtlqh2t","original_url":"http://lenta.ru"}
 {"uuid":"25","short_url":"Eqcmd9eF","original_url":"http://hh.ru"}
+{"uuid":"26","short_url":"c3vHwwak","original_url":"http://lenta.ru"}
+{"uuid":"27","short_url":"Y34MYGNm","original_url":"http://hh.ru"}
