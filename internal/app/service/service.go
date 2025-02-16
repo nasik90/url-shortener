@@ -34,6 +34,8 @@ func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex
 			if err != nil {
 				return "", err
 			}
+			shortURLWithHost := shortURLWithHost(host, shortURL)
+			return shortURLWithHost, settings.ErrOriginalURLNotUnique
 		} else {
 			return "", err
 		}

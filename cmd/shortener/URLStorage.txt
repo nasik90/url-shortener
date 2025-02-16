@@ -25,3 +25,12 @@
 {"uuid":"25","short_url":"Eqcmd9eF","original_url":"http://hh.ru"}
 {"uuid":"26","short_url":"c3vHwwak","original_url":"http://lenta.ru"}
 {"uuid":"27","short_url":"Y34MYGNm","original_url":"http://hh.ru"}
+{"uuid":"28","short_url":"P6I0PDBb","original_url":"https://n7.ru"}
+{"uuid":"29","short_url":"Ep1BToMX","original_url":"https://n7.ru"}
+{"uuid":"30","short_url":"Jv7CFOb0","original_url":"https://l5.ru"}
+{"uuid":"31","short_url":"Ryz5WBLt","original_url":"https://l5.ru"}
+{"uuid":"32","short_url":"MZLqM3Kp","original_url":"https://n7.ru"}
+{"uuid":"33","short_url":"TNmiwemI","original_url":"https://n7.ru"}
+{"uuid":"34","short_url":"cNZjG1v3","original_url":"https://n7.ru"}
+{"uuid":"35","short_url":"KilxyD8E","original_url":"https://n7.ru"}
+{"uuid":"36","short_url":"lZn6JjJM","original_url":"https://n7.ru"}

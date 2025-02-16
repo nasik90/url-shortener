@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,13 +27,22 @@ func GetShortURL(repository service.Repositories, mutex *sync.Mutex, host string
 			http.Error(res, "empty url", http.StatusBadRequest)
 			return
 		}
+		statusConflict := false
 		shortURL, err := service.GetShortURL(ctx, repository, mutex, originalURL, host)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
+			if errors.Is(err, settings.ErrOriginalURLNotUnique) {
+				statusConflict = true
+			} else {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		res.Header().Set("content-type", "text/plain")
-		res.WriteHeader(http.StatusCreated)
+		if statusConflict {
+			res.WriteHeader(http.StatusConflict)
+		} else {
+			res.WriteHeader(http.StatusCreated)
+		}
 		res.Write([]byte(shortURL))
 	}
 }
@@ -71,10 +81,15 @@ func GetShortURLJSON(repository service.Repositories, mutex *sync.Mutex, host st
 			return
 		}
 
+		statusConflict := false
 		shortURL, err := service.GetShortURL(ctx, repository, mutex, input.URL, host)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
+			if errors.Is(err, settings.ErrOriginalURLNotUnique) {
+				statusConflict = true
+			} else {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		var output struct {
 			Result string `json:"result"`
@@ -87,7 +102,11 @@ func GetShortURLJSON(repository service.Repositories, mutex *sync.Mutex, host st
 		}
 
 		res.Header().Set("content-type", "application/json")
-		res.WriteHeader(http.StatusCreated)
+		if statusConflict {
+			res.WriteHeader(http.StatusConflict)
+		} else {
+			res.WriteHeader(http.StatusCreated)
+		}
 		res.Write(result)
 	}
 }
