@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"math/big"
 	"sync"
 
@@ -16,6 +17,7 @@ type Repositories interface {
 	IsUnique(ctx context.Context, shortURL string) (bool, error)
 	Ping() error
 	Close() error
+	GetShortURL(ctx context.Context, originalURL string) (string, error)
 }
 
 func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
@@ -27,7 +29,14 @@ func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex
 	}
 	err = repository.SaveShortURL(ctx, shortURL, originalURL)
 	if err != nil {
-		return "", err
+		if errors.Is(err, settings.ErrOriginalURLNotUnique) {
+			shortURL, err = repository.GetShortURL(ctx, originalURL)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
+		}
 	}
 
 	shortURLWithHost := shortURLWithHost(host, shortURL)

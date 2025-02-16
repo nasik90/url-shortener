@@ -12,7 +12,8 @@ const (
 )
 
 var (
-	ErrOriginalURLNotFound = errors.New("original URL not found")
+	ErrOriginalURLNotFound  = errors.New("original URL not found")
+	ErrOriginalURLNotUnique = errors.New("original URL is not unique")
 )
 
 type Options struct {
@@ -33,8 +34,8 @@ func ParseFlags(o *Options) {
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
-	//flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=StarGlider3 dbname=URLShortener sslmode=disable", "database connection string")
-	flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
+	flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=StarGlider3 dbname=URLShortener sslmode=disable", "database connection string")
+	//flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {

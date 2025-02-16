@@ -49,6 +49,10 @@ func (localCache *LocalCache) SaveShortURLs(ctx context.Context, shortOriginalUR
 	return nil
 }
 
+func (localCache *LocalCache) GetShortURL(ctx context.Context, originalURL string) (string, error) {
+	return "", nil
+}
+
 type FileStorage struct {
 	localCache  *LocalCache
 	CurrentUUID int
@@ -135,4 +139,8 @@ func (fileStorage *FileStorage) SaveShortURLs(ctx context.Context, shortOriginal
 		}
 	}
 	return nil
+}
+
+func (fileStorage *FileStorage) GetShortURL(ctx context.Context, originalURL string) (string, error) {
+	return "", nil
 }
