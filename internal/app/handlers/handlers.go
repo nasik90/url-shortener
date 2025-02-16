@@ -149,7 +149,7 @@ func GetShortURLs(repository service.Repositories, mutex *sync.Mutex, host strin
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		type input struct {
-			СorrelationId string `json:"correlation_id"`
+			СorrelationID string `json:"correlation_id"`
 			OriginalURL   string `json:"original_url"`
 		}
 		var s []input
@@ -159,7 +159,7 @@ func GetShortURLs(repository service.Repositories, mutex *sync.Mutex, host strin
 		}
 		originalURLs := make(map[string]string)
 		for _, in := range s {
-			originalURLs[in.СorrelationId] = in.OriginalURL
+			originalURLs[in.СorrelationID] = in.OriginalURL
 		}
 		shortURLs, err := service.GetShortURLs(ctx, repository, mutex, originalURLs, host)
 		if err != nil {
@@ -168,12 +168,12 @@ func GetShortURLs(repository service.Repositories, mutex *sync.Mutex, host strin
 		}
 		fmt.Println(shortURLs)
 		type output struct {
-			СorrelationId string `json:"correlation_id"`
+			СorrelationID string `json:"correlation_id"`
 			ShortURL      string `json:"short_url"`
 		}
 		var o []output
 		for corId, shortURL := range shortURLs {
-			o = append(o, output{СorrelationId: corId, ShortURL: shortURL})
+			o = append(o, output{СorrelationID: corId, ShortURL: shortURL})
 		}
 
 		result, err := json.MarshalIndent(o, "", "    ")
