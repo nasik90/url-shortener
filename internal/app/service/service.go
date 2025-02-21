@@ -5,29 +5,29 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
-	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
-type Repositories interface {
+type Repository interface {
 	SaveShortURL(ctx context.Context, shortURL, originalURL string) error
 	SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
-	IsUnique(ctx context.Context, shortURL string) (bool, error)
-	Ping() error
+	Ping(ctx context.Context) error
 	Close() error
 	GetShortURL(ctx context.Context, originalURL string) (string, error)
 }
 
-func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	shortURL, err := shortURLWithRetrying(ctx, repository)
+func GetShortURL(ctx context.Context, repository Repository, originalURL, host string) (string, error) {
+	shortURL, err := newShortURL(ctx)
 	if err != nil {
 		return "", err
 	}
 	err = repository.SaveShortURL(ctx, shortURL, originalURL)
+	for errors.Is(err, settings.ErrShortURLNotUnique) {
+		err = repository.SaveShortURL(ctx, shortURL, originalURL)
+	}
+
 	if err != nil {
 		if errors.Is(err, settings.ErrOriginalURLNotUnique) {
 			shortURL, err = repository.GetShortURL(ctx, originalURL)
@@ -45,7 +45,7 @@ func GetShortURL(ctx context.Context, repository Repositories, mutex *sync.Mutex
 	return shortURLWithHost, nil
 }
 
-func GetOriginalURL(ctx context.Context, repository Repositories, shortURL string) (string, error) {
+func GetOriginalURL(ctx context.Context, repository Repository, shortURL string) (string, error) {
 	originalURL, err := repository.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		return "", err
@@ -73,39 +73,28 @@ func shortURLWithHost(host, randomString string) string {
 	return host + "/" + randomString
 }
 
-func shortURLWithRetrying(ctx context.Context, repository Repositories) (string, error) {
-	shortURL := ""
-	shortURLUnique := false
-	for !shortURLUnique {
-		randomString, err := randomString(settings.ShortURLlen)
-		if err != nil {
-			return "", err
-		}
-		shortURL = randomString
-		shortURLUnique, err = repository.IsUnique(ctx, shortURL)
-		if err != nil {
-			return "", err
-		}
-	}
-	return shortURL, nil
+func newShortURL(ctx context.Context) (string, error) {
+	return randomString(settings.ShortURLlen)
 }
 
-func GetShortURLs(ctx context.Context, repository Repositories, mutex *sync.Mutex, originalURLs map[string]string, host string) (map[string]string, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
+func GetShortURLs(ctx context.Context, repository Repository, originalURLs map[string]string, host string) (map[string]string, error) {
+	shortOriginalURLs, shortURLs, err := newShortURLs(ctx, originalURLs, host)
+	err = repository.SaveShortURLs(ctx, shortOriginalURLs)
+	return shortURLs, err
+}
 
+func newShortURLs(ctx context.Context, originalURLs map[string]string, host string) (map[string]string, map[string]string, error) {
 	shortURLs := make(map[string]string)
 	shortOriginalURLs := make(map[string]string)
 
 	for id, shortOriginalURL := range originalURLs {
-		shortURL, err := shortURLWithRetrying(ctx, repository) // запросы в цикле =(
+		shortURL, err := newShortURL(ctx)
 		if err != nil {
-			return shortURLs, err
+			return shortOriginalURLs, shortURLs, err
 		}
 		shortURLWithHost := shortURLWithHost(host, shortURL)
 		shortURLs[id] = shortURLWithHost
-		shortOriginalURLs[shortURL] = shortOriginalURL // проверить, что и сгенерированный в данной сессии shortURL уникален
+		shortOriginalURLs[shortURL] = shortOriginalURL
 	}
-	err := repository.SaveShortURLs(ctx, shortOriginalURLs)
-	return shortURLs, err
+	return shortOriginalURLs, shortURLs, nil
 }

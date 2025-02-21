@@ -37,32 +37,14 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	// в случае неуспешного коммита все изменения транзакции будут отменены
 	defer tx.Rollback()
 
-	// проверка на существование таблицы
-	row := tx.QueryRowContext(ctx, `SELECT EXISTS (
-		SELECT 1 FROM information_schema.tables
-		WHERE table_schema = 'public'
-		AND table_name = 'urlstorage'
-	) AS table_exists`)
-
-	var tableExists bool
-
-	err = row.Scan(&tableExists)
-	if err != nil {
-		return err
-	}
-
-	if tableExists {
-		return tx.Commit()
-	}
-
 	// создаём таблицу сообщений и необходимые индексы
 	tx.ExecContext(ctx, `
-        CREATE TABLE urlstorage (
-            shorturl varchar(8) PRIMARY KEY,
-            originalurl varchar(512)
+        CREATE TABLE IF NOT EXISTS urlstorage (
+            shorturl varchar(8) CONSTRAINT shorturl_pkey PRIMARY KEY,
+            originalurl varchar(512) CONSTRAINT originalurl_ukey UNIQUE
         )
     `)
-	tx.ExecContext(ctx, `CREATE UNIQUE INDEX originalurl_idx ON urlstorage (originalurl)`)
+	//tx.ExecContext(ctx, `CREATE UNIQUE INDEX originalurl_idx ON urlstorage (originalurl)`)
 
 	// коммитим транзакцию
 	return tx.Commit()
@@ -70,10 +52,20 @@ func (s Store) Bootstrap(ctx context.Context) error {
 
 func (s *Store) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
 	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (shortURL, originalURL) VALUES ($1, $2)`, shortURL, originalURL)
-	if err != nil {
-		// проверяем, что ошибка сигнализирует о потенциальном нарушении целостности данных
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+	err = checkInsertError(err)
+	return err
+}
+
+func checkInsertError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		if pgErr.ConstraintName == "shorturl_pkey" {
+			return settings.ErrShortURLNotUnique
+		}
+		if pgErr.ConstraintName == "originalurl_ukey" {
 			return settings.ErrOriginalURLNotUnique
 		}
 	}
@@ -114,36 +106,18 @@ func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, er
 	return originalURL, nil
 }
 
-func (s *Store) IsUnique(ctx context.Context, shortURL string) (bool, error) {
-	row := s.conn.QueryRowContext(ctx, `
-		SELECT
-			shorturl
-		FROM urlstorage
-		WHERE shorturl = $1
-		`, shortURL)
-
-	var shortURLDB string
-	err := row.Scan(&shortURLDB)
-	if err == sql.ErrNoRows {
-		return true, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return false, nil
-}
-
 func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
-	// ctx := context.Background()
+	const batchLimit = 1000
 	shortOriginalURLBatch := make(map[string]string)
 	i := 0
 	for shortURL, originalURL := range shortOriginalURLs {
-		if i == 1000 {
+		if i == batchLimit {
 			err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch)
 			if err != nil {
 				return err
 			}
 			shortOriginalURLBatch = make(map[string]string)
+			i = 0
 		}
 		shortOriginalURLBatch[shortURL] = originalURL
 		i++
@@ -171,6 +145,6 @@ func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch ma
 	return tx.Commit()
 }
 
-func (s *Store) Ping() error {
-	return s.conn.Ping()
+func (s *Store) Ping(ctx context.Context) error {
+	return s.conn.PingContext(ctx)
 }

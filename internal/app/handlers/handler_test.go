@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
@@ -18,7 +17,6 @@ import (
 )
 
 func TestGetShortURL(t *testing.T) {
-	var mutex sync.Mutex
 	ctx := context.Background()
 	type want struct {
 		code              int
@@ -48,7 +46,7 @@ func TestGetShortURL(t *testing.T) {
 			body.Write([]byte(tt.originalURL))
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			GetShortURL(storage, &mutex, request.Host)(w, request)
+			GetShortURL(storage, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
@@ -124,7 +122,6 @@ func TestGetOriginalURL(t *testing.T) {
 
 func TestGetShortURLJSON(t *testing.T) {
 	ctx := context.Background()
-	var mutex sync.Mutex
 	type input struct {
 		URL string `json:"url"`
 	}
@@ -160,7 +157,7 @@ func TestGetShortURLJSON(t *testing.T) {
 			body.Write(originalURLJSON)
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
-			GetShortURLJSON(storage, &mutex, request.Host)(w, request)
+			GetShortURLJSON(storage, request.Host)(w, request)
 
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)

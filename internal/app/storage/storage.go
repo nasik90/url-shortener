@@ -4,21 +4,30 @@ import (
 	"context"
 	"io"
 	"strconv"
+	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
 type LocalCache struct {
+	mu       sync.RWMutex
 	CahceMap map[string]string
 }
 
-func (localCache *LocalCache) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
-	localCache.CahceMap[shortURL] = originalURL
+func (l *LocalCache) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if _, ok := l.CahceMap[shortURL]; ok {
+		return settings.ErrShortURLNotUnique
+	}
+	l.CahceMap[shortURL] = originalURL
 	return nil
 }
 
-func (localCache *LocalCache) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	originalURL, ok := localCache.CahceMap[shortURL]
+func (l *LocalCache) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	originalURL, ok := l.CahceMap[shortURL]
 	if !ok {
 		err := settings.ErrOriginalURLNotFound
 		return "", err
@@ -26,22 +35,17 @@ func (localCache *LocalCache) GetOriginalURL(ctx context.Context, shortURL strin
 	return originalURL, nil
 }
 
-func (localCache *LocalCache) IsUnique(ctx context.Context, shortURL string) (bool, error) {
-	_, ok := localCache.CahceMap[shortURL]
-	return !ok, nil
-}
-
-func (localCache *LocalCache) Ping() error {
+func (l *LocalCache) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (localCache *LocalCache) Close() error {
+func (l *LocalCache) Close() error {
 	return nil
 }
 
-func (localCache *LocalCache) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+func (l *LocalCache) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
 	for shortURL, originalURL := range shortOriginalURLs {
-		err := localCache.SaveShortURL(ctx, shortURL, originalURL)
+		err := l.SaveShortURL(ctx, shortURL, originalURL)
 		if err != nil {
 			return err
 		}
@@ -49,11 +53,12 @@ func (localCache *LocalCache) SaveShortURLs(ctx context.Context, shortOriginalUR
 	return nil
 }
 
-func (localCache *LocalCache) GetShortURL(ctx context.Context, originalURL string) (string, error) {
+func (l *LocalCache) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	return "", nil
 }
 
 type FileStorage struct {
+	mu          sync.RWMutex
 	localCache  *LocalCache
 	CurrentUUID int
 	Producer    *Producer
@@ -81,53 +86,53 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	return fileStorage, nil
 }
 
-func (fileStorage *FileStorage) Close() error {
-	return fileStorage.Producer.Close()
+func (f *FileStorage) Close() error {
+	return f.Producer.Close()
 }
 
-func (fileStorage *FileStorage) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
+func (f *FileStorage) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
 	var event Event
-	fileStorage.CurrentUUID++
-	event.UUID = strconv.Itoa(fileStorage.CurrentUUID)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.CurrentUUID++
+	event.UUID = strconv.Itoa(f.CurrentUUID)
 	event.ShortURL = shortURL
 	event.OriginalURL = originalURL
-	fileStorage.Producer.WriteEvent(&event)
-	return fileStorage.localCache.SaveShortURL(ctx, shortURL, originalURL)
+	if err := f.Producer.WriteEvent(&event); err != nil {
+		return err
+	}
+	return f.localCache.SaveShortURL(ctx, shortURL, originalURL)
 }
 
-func (fileStorage *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	return fileStorage.localCache.GetOriginalURL(ctx, shortURL)
+func (f *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return f.localCache.GetOriginalURL(ctx, shortURL)
 }
 
-func (fileStorage *FileStorage) IsUnique(ctx context.Context, shortURL string) (bool, error) {
-	return fileStorage.localCache.IsUnique(ctx, shortURL)
-}
-
-func restoreData(fileStorage *FileStorage) error {
+func restoreData(f *FileStorage) error {
 	ctx := context.Background()
 	for {
-		event, err := fileStorage.Consumer.ReadEvent()
+		event, err := f.Consumer.ReadEvent()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		err = fileStorage.localCache.SaveShortURL(ctx, event.ShortURL, event.OriginalURL)
+		err = f.localCache.SaveShortURL(ctx, event.ShortURL, event.OriginalURL)
 		if err != nil {
 			return err
 		}
-		fileStorage.CurrentUUID, err = strconv.Atoi(event.UUID)
+		f.CurrentUUID, err = strconv.Atoi(event.UUID)
 		if err != nil {
 			return err
 		}
 	}
 
-	fileStorage.Consumer.Close()
+	f.Consumer.Close()
 	return nil
 }
 
-func (fileStorage *FileStorage) Ping() error {
+func (fileStorage *FileStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
