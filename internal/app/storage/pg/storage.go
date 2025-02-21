@@ -44,7 +44,6 @@ func (s Store) Bootstrap(ctx context.Context) error {
             originalurl varchar(512) CONSTRAINT originalurl_ukey UNIQUE
         )
     `)
-	//tx.ExecContext(ctx, `CREATE UNIQUE INDEX originalurl_idx ON urlstorage (originalurl)`)
 
 	// коммитим транзакцию
 	return tx.Commit()
@@ -107,6 +106,13 @@ func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, er
 }
 
 func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+	// при массовом сохранении сейчас нет проверки на уникальность вставляемых shortURL и originalURL
+	// как вижу реализацию данной проверки:
+	// блокируем строки таблицы по вставляемым shortURL и отдельно по вставляемым originalURL
+	// проверяем селектом, что в БД нет таких shortURL и originalURL. Если нет, то вставляем записи.
+	// Если есть такие же originalURL, то возвращаем по таким shortURL из БД
+	// Если есть такие же shortURL, то по таким записям генерируем новый shortURL
+	// Все это делаем в одной транзакции
 	const batchLimit = 1000
 	shortOriginalURLBatch := make(map[string]string)
 	i := 0

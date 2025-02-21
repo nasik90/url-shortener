@@ -132,13 +132,13 @@ func restoreData(f *FileStorage) error {
 	return nil
 }
 
-func (fileStorage *FileStorage) Ping(ctx context.Context) error {
+func (f *FileStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (fileStorage *FileStorage) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+func (f *FileStorage) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
 	for shortURL, originalURL := range shortOriginalURLs {
-		err := fileStorage.SaveShortURL(ctx, shortURL, originalURL)
+		err := f.SaveShortURL(ctx, shortURL, originalURL)
 		if err != nil {
 			return err
 		}
@@ -146,6 +146,6 @@ func (fileStorage *FileStorage) SaveShortURLs(ctx context.Context, shortOriginal
 	return nil
 }
 
-func (fileStorage *FileStorage) GetShortURL(ctx context.Context, originalURL string) (string, error) {
+func (f *FileStorage) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	return "", nil
 }
