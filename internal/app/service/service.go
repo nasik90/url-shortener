@@ -78,23 +78,18 @@ func newShortURL(ctx context.Context) (string, error) {
 }
 
 func GetShortURLs(ctx context.Context, repository Repository, originalURLs map[string]string, host string) (map[string]string, error) {
-	shortOriginalURLs, shortURLs, err := newShortURLs(ctx, originalURLs, host)
-	err = repository.SaveShortURLs(ctx, shortOriginalURLs)
-	return shortURLs, err
-}
-
-func newShortURLs(ctx context.Context, originalURLs map[string]string, host string) (map[string]string, map[string]string, error) {
 	shortURLs := make(map[string]string)
 	shortOriginalURLs := make(map[string]string)
 
 	for id, shortOriginalURL := range originalURLs {
 		shortURL, err := newShortURL(ctx)
 		if err != nil {
-			return shortOriginalURLs, shortURLs, err
+			return shortURLs, err
 		}
 		shortURLWithHost := shortURLWithHost(host, shortURL)
 		shortURLs[id] = shortURLWithHost
 		shortOriginalURLs[shortURL] = shortOriginalURL
 	}
-	return shortOriginalURLs, shortURLs, nil
+	err := repository.SaveShortURLs(ctx, shortOriginalURLs)
+	return shortURLs, err
 }

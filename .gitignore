@@ -22,5 +22,5 @@ vendor/
 .idea
 .vscode
 
-# file storage directory
-fileStorage
+# file storage files
+URLStorage.txt

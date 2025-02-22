@@ -48,8 +48,7 @@ func (p *Producer) WriteEvent(event *Event) error {
 	}
 
 	// записываем буфер в файл
-	return p.writer.Flush()
-	// return nil
+	return nil
 }
 
 func (p *Producer) Close() error {
