@@ -28,8 +28,10 @@ func RunServer(repository service.Repository, options *settings.Options) error {
 		r.Post("/api/shorten/batch", handler.GetShortURLs(repository, options.BaseURL))
 		r.Get("/{id}", handler.GetOriginalURL(repository))
 		r.Get("/ping", handler.Ping(repository))
+		r.Get("/api/user/urls", handler.GetUserURLs(repository, options.BaseURL))
 	})
-	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.GzipMiddleware(r.ServeHTTP)))
+	// техдолг: причесать вызовы middleware
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP))))
 	if err != nil {
 		return err
 	}

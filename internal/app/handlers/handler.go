@@ -137,7 +137,7 @@ func GetShortURLs(repository service.Repository, host string) http.HandlerFunc {
 			o = append(o, output{СorrelationID: corID, ShortURL: shortURL})
 		}
 
-		result, err := json.MarshalIndent(o, "", "    ")
+		result, err := json.Marshal(o)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -145,6 +145,40 @@ func GetShortURLs(repository service.Repository, host string) http.HandlerFunc {
 
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusCreated)
+		res.Write(result)
+	}
+}
+
+func GetUserURLs(repository service.Repository, host string) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		UserURLs, err := service.GetUserURLs(ctx, repository, host)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		type output struct {
+			ShortURL    string `json:"short_url"`
+			OriginalURL string `json:"original_url"`
+		}
+		var o []output
+		for shortURL, originalURL := range UserURLs {
+			o = append(o, output{ShortURL: shortURL, OriginalURL: originalURL})
+		}
+
+		result, err := json.Marshal(o)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		status := http.StatusOK
+		if len(UserURLs) == 0 {
+			status = http.StatusNoContent
+		}
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(status)
 		res.Write(result)
 	}
 }
