@@ -1,67 +1,39 @@
 package server
 
 import (
-	"bytes"
 	"net/http"
-	"strconv"
-	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	handler "github.com/nasik90/url-shortener/internal/app/handlers"
+	"github.com/nasik90/url-shortener/internal/app/logger"
+	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
 	"github.com/nasik90/url-shortener/internal/app/service"
-	"github.com/nasik90/url-shortener/internal/app/storage"
+	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func RunServer(repository storage.Repositories, options *settings.Options) {
+func RunServer(repository service.Repository, options *settings.Options) error {
 
-	var mutex sync.Mutex
+	if err := logger.Initialize(options.LogLevel); err != nil {
+		return err
+	}
+
+	logger.Log.Info("Running server", zap.String("address", options.ServerAddress))
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Post("/", getShortURL(repository, &mutex, options.BaseURL))
-		r.Get("/{id}", getOriginalURL(repository))
+		r.Post("/", handler.GetShortURL(repository, options.BaseURL))
+		r.Post("/api/shorten", handler.GetShortURLJSON(repository, options.BaseURL))
+		r.Post("/api/shorten/batch", handler.GetShortURLs(repository, options.BaseURL))
+		r.Get("/{id}", handler.GetOriginalURL(repository))
+		r.Get("/ping", handler.Ping(repository))
 	})
-	err := http.ListenAndServe(options.ServerAddress, r)
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.GzipMiddleware(r.ServeHTTP)))
 	if err != nil {
-		panic(err)
+		return err
 	}
-}
 
-func getShortURL(repository storage.Repositories, mutex *sync.Mutex, host string) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(req.Body)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		originalURL := buf.String()
-		shortURL, err := service.GetShortURL(repository, mutex, originalURL, host)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Content-Length", strconv.Itoa(len(shortURL)))
-		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(shortURL))
-	}
-}
+	return nil
 
-func getOriginalURL(repository storage.Repositories) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		id := req.RequestURI
-		//if id with "/"
-		if len(id) == settings.ShortURLlen+1 {
-			id = id[1:]
-		}
-		originalURL, err := service.GetOriginalURL(repository, id)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusNotFound)
-			return
-		}
-		res.Header().Set("Location", originalURL)
-		res.WriteHeader(http.StatusTemporaryRedirect)
-	}
 }

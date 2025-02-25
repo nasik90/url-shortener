@@ -1,39 +1,59 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
+	"errors"
 	"math/big"
-	"sync"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
-	"github.com/nasik90/url-shortener/internal/app/storage"
 )
 
-func GetShortURL(repository storage.Repositories, mutex *sync.Mutex, originalURL, host string) (string, error) {
-	mutex.Lock()
-	shortURL, err := shortURLWithRetrying(repository)
+type Repository interface {
+	SaveShortURL(ctx context.Context, shortURL, originalURL string) error
+	SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	Ping(ctx context.Context) error
+	Close() error
+	GetShortURL(ctx context.Context, originalURL string) (string, error)
+}
+
+func GetShortURL(ctx context.Context, repository Repository, originalURL, host string) (string, error) {
+	shortURL, err := newShortURL(ctx)
 	if err != nil {
 		return "", err
 	}
-	repository.SaveShortURL(shortURL, originalURL)
-	mutex.Unlock()
+	err = repository.SaveShortURL(ctx, shortURL, originalURL)
+	for errors.Is(err, settings.ErrShortURLNotUnique) {
+		err = repository.SaveShortURL(ctx, shortURL, originalURL)
+	}
+
+	if err != nil {
+		if errors.Is(err, settings.ErrOriginalURLNotUnique) {
+			shortURL, err = repository.GetShortURL(ctx, originalURL)
+			if err != nil {
+				return "", err
+			}
+			shortURLWithHost := shortURLWithHost(host, shortURL)
+			return shortURLWithHost, settings.ErrOriginalURLNotUnique
+		} else {
+			return "", err
+		}
+	}
 
 	shortURLWithHost := shortURLWithHost(host, shortURL)
 	return shortURLWithHost, nil
 }
 
-func GetOriginalURL(repository storage.Repositories, shortURL string) (string, error) {
-
-	originalURL, err := repository.GetOriginalURL(shortURL)
+func GetOriginalURL(ctx context.Context, repository Repository, shortURL string) (string, error) {
+	originalURL, err := repository.GetOriginalURL(ctx, shortURL)
 	if err != nil {
 		return "", err
 	}
 	return originalURL, nil
-
 }
 
 func randomString(charCount int) (res string, err error) {
-
 	template := []rune(settings.TemplateForRand)
 	templateLen := len(template)
 	resChar := make([]rune, charCount)
@@ -47,25 +67,29 @@ func randomString(charCount int) (res string, err error) {
 	}
 
 	return string(resChar), nil
-
 }
 
 func shortURLWithHost(host, randomString string) string {
-	// return "http://" + host + "/" + randomString
 	return host + "/" + randomString
 }
 
-func shortURLWithRetrying(repository storage.Repositories) (string, error) {
-	shortURL := ""
-	shortURLUnique := false
-	for !shortURLUnique {
-		randomString, err := randomString(settings.ShortURLlen)
+func newShortURL(ctx context.Context) (string, error) {
+	return randomString(settings.ShortURLlen)
+}
+
+func GetShortURLs(ctx context.Context, repository Repository, originalURLs map[string]string, host string) (map[string]string, error) {
+	shortURLs := make(map[string]string)
+	shortOriginalURLs := make(map[string]string)
+
+	for id, shortOriginalURL := range originalURLs {
+		shortURL, err := newShortURL(ctx)
 		if err != nil {
-			return "", err
+			return shortURLs, err
 		}
-		//shortURL = buildShortURL(host, randomString)
-		shortURL = randomString
-		shortURLUnique = repository.ShortURLUnique(shortURL)
+		shortURLWithHost := shortURLWithHost(host, shortURL)
+		shortURLs[id] = shortURLWithHost
+		shortOriginalURLs[shortURL] = shortOriginalURL
 	}
-	return shortURL, nil
+	err := repository.SaveShortURLs(ctx, shortOriginalURLs)
+	return shortURLs, err
 }
