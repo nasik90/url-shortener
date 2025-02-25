@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	ShortURLlen     = 8
-	TemplateForRand = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	ShortURLlen      = 8
+	TemplateForRand  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	ContextUserIDKey = "user"
 )
 
 var (

@@ -57,6 +57,10 @@ func (l *LocalCache) GetShortURL(ctx context.Context, originalURL string) (strin
 	return "", nil
 }
 
+func (l *LocalCache) GetUserURLs(ctx context.Context) (result map[string]string, err error) {
+	return result, nil
+}
+
 type FileStorage struct {
 	mu          sync.RWMutex
 	localCache  *LocalCache
@@ -148,4 +152,8 @@ func (f *FileStorage) SaveShortURLs(ctx context.Context, shortOriginalURLs map[s
 
 func (f *FileStorage) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	return "", nil
+}
+
+func (f *FileStorage) GetUserURLs(ctx context.Context) (result map[string]string, err error) {
+	return result, nil
 }

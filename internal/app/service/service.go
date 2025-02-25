@@ -16,6 +16,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 	Close() error
 	GetShortURL(ctx context.Context, originalURL string) (string, error)
+	GetUserURLs(ctx context.Context) (map[string]string, error)
 }
 
 func GetShortURL(ctx context.Context, repository Repository, originalURL, host string) (string, error) {
@@ -92,4 +93,17 @@ func GetShortURLs(ctx context.Context, repository Repository, originalURLs map[s
 	}
 	err := repository.SaveShortURLs(ctx, shortOriginalURLs)
 	return shortURLs, err
+}
+
+func GetUserURLs(ctx context.Context, repository Repository, host string) (map[string]string, error) {
+	data := make(map[string]string)
+	userURLs, err := repository.GetUserURLs(ctx)
+	if err != nil {
+		return data, err
+	}
+	for shortURL, originalURL := range userURLs {
+		shortURLWithHost := shortURLWithHost(host, shortURL)
+		data[shortURLWithHost] = originalURL
+	}
+	return data, err
 }
