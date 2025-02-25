@@ -189,6 +189,10 @@ func (s *Store) GetUserURLs(ctx context.Context) (map[string]string, error) {
 		data[shortURL] = originalURL
 	}
 
+	if err := rows.Err(); err != nil {
+		return data, err
+	}
+
 	return data, nil
 }
 
