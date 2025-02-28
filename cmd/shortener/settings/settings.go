@@ -16,6 +16,7 @@ var (
 	ErrOriginalURLNotFound  = errors.New("original URL not found")
 	ErrOriginalURLNotUnique = errors.New("original URL is not unique")
 	ErrShortURLNotUnique    = errors.New("short URL is not unique")
+	ErrRecordMarkedForDel   = errors.New("record marked for deletion")
 )
 
 type Options struct {
@@ -26,13 +27,18 @@ type Options struct {
 	DatabaseDSN   string
 }
 
+type Record struct {
+	ShortURL string
+	UserID   string
+}
+
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
-	//flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
-	flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
+	flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
+	//flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {

@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"os"
+	"os/signal"
+	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
@@ -36,10 +39,16 @@ func main() {
 			logger.Log.Fatal("create file store", zap.String("FilePath", options.FilePath), zap.String("error", err.Error()))
 		}
 	}
-	defer func() {
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		logger.Log.Info("closing the server")
 		if err = store.Close(); err != nil {
 			logger.Log.Error("close storage", zap.String("info", "error to close storage"), zap.String("error", err.Error()))
 		}
+		os.Exit(0)
 	}()
 
 	err = server.RunServer(store, options)
