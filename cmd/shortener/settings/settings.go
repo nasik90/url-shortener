@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	ShortURLlen      = 8
-	TemplateForRand  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	ContextUserIDKey = "user"
+	ShortURLlen                 = 8
+	TemplateForRand             = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	UserIDContextKey contextKey = "user"
 )
 
 var (
@@ -31,6 +31,8 @@ type Record struct {
 	ShortURL string
 	UserID   string
 }
+
+type contextKey string
 
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")

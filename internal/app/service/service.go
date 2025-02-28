@@ -123,7 +123,7 @@ func MarkRecordsForDeletion(ctx context.Context, repository Repository, shortURL
 }
 
 func userIDFromContext(ctx context.Context) string {
-	return ctx.Value(settings.ContextUserIDKey).(string)
+	return ctx.Value(settings.UserIDContextKey).(string)
 }
 
 func HandleRecords(repository Repository, ch <-chan settings.Record) {
@@ -131,21 +131,17 @@ func HandleRecords(repository Repository, ch <-chan settings.Record) {
 	ticker := time.NewTicker(5 * time.Second)
 
 	var records []settings.Record
-	logger.Log.Info("HandleRecords")
 	for {
 		select {
 		case record := <-ch:
 			// добавим сообщение в слайс для последующего сохранения
 			records = append(records, record)
-			//logger.Log.Info("HandleRecords record marked for deletion", zap.String(record.ShortURL, string(record.UserID)))
 		case <-ticker.C:
 			// подождём, пока придёт хотя бы одно сообщение
-			//logger.Log.Info("HandleRecords ticker.C")
 			if len(records) == 0 {
 				continue
 			}
 			// сохраним все пришедшие сообщения одновременно
-			//logger.Log.Info("HandleRecords MarkRecordsForDeletion")
 			err := repository.MarkRecordsForDeletion(context.TODO(), records...)
 			if err != nil {
 				logger.Log.Info("cannot mark records for deletion", zap.Error(err))

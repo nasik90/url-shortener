@@ -71,7 +71,7 @@ func Auth(h http.HandlerFunc) http.HandlerFunc {
 			res.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(req.Context(), settings.ContextUserIDKey, userID)
+		ctx := context.WithValue(req.Context(), settings.UserIDContextKey, userID)
 		req = req.WithContext(ctx)
 		h.ServeHTTP(res, req)
 	}

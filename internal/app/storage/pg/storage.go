@@ -206,7 +206,7 @@ func (s *Store) GetUserURLs(ctx context.Context) (map[string]string, error) {
 }
 
 func userIDFromContext(ctx context.Context) string {
-	return ctx.Value(settings.ContextUserIDKey).(string)
+	return ctx.Value(settings.UserIDContextKey).(string)
 }
 
 func (s *Store) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
