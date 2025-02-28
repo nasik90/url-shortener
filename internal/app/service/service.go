@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	"github.com/nasik90/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 type Repository interface {
@@ -17,6 +20,7 @@ type Repository interface {
 	Close() error
 	GetShortURL(ctx context.Context, originalURL string) (string, error)
 	GetUserURLs(ctx context.Context) (map[string]string, error)
+	MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error
 }
 
 func GetShortURL(ctx context.Context, repository Repository, originalURL, host string) (string, error) {
@@ -106,4 +110,50 @@ func GetUserURLs(ctx context.Context, repository Repository, host string) (map[s
 		data[shortURLWithHost] = originalURL
 	}
 	return data, err
+}
+
+func MarkRecordsForDeletion(ctx context.Context, repository Repository, shortURLs []string, ch chan<- settings.Record) {
+	userID := userIDFromContext(ctx)
+	for _, shortURL := range shortURLs {
+		var r settings.Record
+		r.ShortURL = shortURL
+		r.UserID = userID
+		ch <- r
+	}
+}
+
+func userIDFromContext(ctx context.Context) string {
+	return ctx.Value(settings.ContextUserIDKey).(string)
+}
+
+func HandleRecords(repository Repository, ch <-chan settings.Record) {
+	// будем сохранять сообщения, накопленные за последние 5 секунд
+	ticker := time.NewTicker(5 * time.Second)
+
+	var records []settings.Record
+	logger.Log.Info("HandleRecords")
+	for {
+		select {
+		case record := <-ch:
+			// добавим сообщение в слайс для последующего сохранения
+			records = append(records, record)
+			//logger.Log.Info("HandleRecords record marked for deletion", zap.String(record.ShortURL, string(record.UserID)))
+		case <-ticker.C:
+			// подождём, пока придёт хотя бы одно сообщение
+			//logger.Log.Info("HandleRecords ticker.C")
+			if len(records) == 0 {
+				continue
+			}
+			// сохраним все пришедшие сообщения одновременно
+			//logger.Log.Info("HandleRecords MarkRecordsForDeletion")
+			err := repository.MarkRecordsForDeletion(context.TODO(), records...)
+			if err != nil {
+				logger.Log.Info("cannot mark records for deletion", zap.Error(err))
+				// не будем стирать сообщения, попробуем отправить их чуть позже
+				continue
+			}
+			// сотрём успешно отосланные сообщения
+			records = nil
+		}
+	}
 }

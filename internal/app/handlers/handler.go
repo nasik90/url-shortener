@@ -47,6 +47,10 @@ func GetOriginalURL(repository service.Repository) http.HandlerFunc {
 		id := strings.Trim(req.URL.Path, "/")
 		originalURL, err := service.GetOriginalURL(ctx, repository, id)
 		if err != nil {
+			if err == settings.ErrRecordMarkedForDel {
+				http.Error(res, err.Error(), http.StatusGone)
+				return
+			}
 			http.Error(res, err.Error(), http.StatusNotFound)
 			return
 		}
@@ -180,5 +184,19 @@ func GetUserURLs(repository service.Repository, host string) http.HandlerFunc {
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(status)
 		res.Write(result)
+	}
+}
+
+func MarkRecordsForDeletion(repository service.Repository, ch chan<- settings.Record) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var s []string
+		if err := json.NewDecoder(req.Body).Decode(&s); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		ctx := req.Context()
+		service.MarkRecordsForDeletion(ctx, repository, s, ch)
+		res.Header().Set("content-type", "text/plain")
+		res.WriteHeader(http.StatusAccepted)
 	}
 }
