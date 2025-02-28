@@ -4,10 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	"github.com/nasik90/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 type Store struct {
@@ -41,7 +46,9 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	tx.ExecContext(ctx, `
         CREATE TABLE IF NOT EXISTS urlstorage (
             shorturl varchar(8) CONSTRAINT shorturl_pkey PRIMARY KEY,
-            originalurl varchar(512) CONSTRAINT originalurl_ukey UNIQUE
+            originalurl varchar(512) CONSTRAINT originalurl_ukey UNIQUE,
+			userid varchar(64), 
+			deletedflag bool DEFAULT false  
         )
     `)
 
@@ -50,7 +57,8 @@ func (s Store) Bootstrap(ctx context.Context) error {
 }
 
 func (s *Store) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
-	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (shortURL, originalURL) VALUES ($1, $2)`, shortURL, originalURL)
+	userID := userIDFromContext(ctx)
+	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (shortURL, originalURL, userid) VALUES ($1, $2, $3)`, shortURL, originalURL, userID)
 	err = checkInsertError(err)
 	return err
 }
@@ -92,15 +100,22 @@ func (s *Store) GetShortURL(ctx context.Context, originalURL string) (string, er
 func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	row := s.conn.QueryRowContext(ctx, `
 		SELECT
-			originalurl
+			originalurl,
+			deletedflag
 		FROM urlstorage
 		WHERE shorturl = $1
 		`, shortURL)
 
-	var originalURL string
-	err := row.Scan(&originalURL)
+	var (
+		originalURL string
+		deletedFlag bool
+	)
+	err := row.Scan(&originalURL, &deletedFlag)
 	if err != nil {
 		return "", err
+	}
+	if deletedFlag {
+		return originalURL, settings.ErrRecordMarkedForDel
 	}
 	return originalURL, nil
 }
@@ -115,35 +130,38 @@ func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]
 	// Все это делаем в одной транзакции
 	const batchLimit = 1000
 	shortOriginalURLBatch := make(map[string]string)
+	userID := userIDFromContext(ctx)
 	i := 0
 	for shortURL, originalURL := range shortOriginalURLs {
 		if i == batchLimit {
-			err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch)
+			err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch, userID)
 			if err != nil {
 				return err
 			}
-			shortOriginalURLBatch = make(map[string]string)
+			for k := range shortOriginalURLBatch {
+				delete(shortOriginalURLBatch, k)
+			}
 			i = 0
 		}
 		shortOriginalURLBatch[shortURL] = originalURL
 		i++
 	}
-	err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch)
+	err := s.saveShortURLsBatch(ctx, shortOriginalURLBatch, userID)
 	return err
 }
 
-func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch map[string]string) error {
+func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch map[string]string, userID string) error {
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	stmt, err := tx.PrepareContext(ctx, "INSERT INTO urlstorage (shortURL, originalURL) VALUES ($1, $2)")
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO urlstorage (shortURL, originalURL, userid) VALUES ($1, $2, $3)")
 	if err != nil {
 		return err
 	}
 	for shortURL, originalURL := range shortOriginalURLBatch {
-		_, err := stmt.ExecContext(ctx, shortURL, originalURL)
+		_, err := stmt.ExecContext(ctx, shortURL, originalURL, userID)
 		if err != nil {
 			return err
 		}
@@ -153,4 +171,71 @@ func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch ma
 
 func (s *Store) Ping(ctx context.Context) error {
 	return s.conn.PingContext(ctx)
+}
+
+func (s *Store) GetUserURLs(ctx context.Context) (map[string]string, error) {
+	userID := userIDFromContext(ctx)
+	data := make(map[string]string)
+	rows, err := s.conn.QueryContext(ctx, `
+	SELECT
+		shorturl,
+		originalurl
+	FROM urlstorage
+	WHERE userid = $1
+	`, userID)
+
+	if err != nil {
+		return data, err
+	}
+
+	var (
+		shortURL, originalURL string
+	)
+	for rows.Next() {
+		if err := rows.Scan(&shortURL, &originalURL); err != nil {
+			return data, err
+		}
+		data[shortURL] = originalURL
+	}
+
+	if err := rows.Err(); err != nil {
+		return data, err
+	}
+
+	return data, nil
+}
+
+func userIDFromContext(ctx context.Context) string {
+	return ctx.Value(settings.UserIDContextKey).(string)
+}
+
+func (s *Store) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
+	for _, r := range records {
+		logger.Log.Info("record marked for deletion(plan)", zap.String("shortURL", r.ShortURL), zap.String("userID", r.UserID))
+	}
+
+	var values []string
+	var args []any
+	for i, r := range records {
+		base := i * 2
+		params := fmt.Sprintf("($%d, $%d)", base+1, base+2)
+		values = append(values, params)
+		args = append(args, r.ShortURL, r.UserID)
+	}
+	query := `
+		UPDATE urlstorage
+		SET deletedflag = true
+		FROM (VALUES` + strings.Join(values, ",") + `
+		) AS data(shorturl, userid)
+		WHERE urlstorage.shorturl = data.shorturl and urlstorage.userid = data.userid;`
+
+	// WHERE urlstorage.shorturl = data.shorturl and urlstorage.userid = data.userid;`
+
+	res, err := s.conn.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	logger.Log.Info("record marked for deletion(fact)", zap.String("rowsAffected", strconv.Itoa(int(rowsAffected))))
+	return err
 }

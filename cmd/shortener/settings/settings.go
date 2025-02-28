@@ -7,14 +7,16 @@ import (
 )
 
 const (
-	ShortURLlen     = 8
-	TemplateForRand = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	ShortURLlen                 = 8
+	TemplateForRand             = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	UserIDContextKey contextKey = "user"
 )
 
 var (
 	ErrOriginalURLNotFound  = errors.New("original URL not found")
 	ErrOriginalURLNotUnique = errors.New("original URL is not unique")
 	ErrShortURLNotUnique    = errors.New("short URL is not unique")
+	ErrRecordMarkedForDel   = errors.New("record marked for deletion")
 )
 
 type Options struct {
@@ -24,6 +26,13 @@ type Options struct {
 	FilePath      string
 	DatabaseDSN   string
 }
+
+type Record struct {
+	ShortURL string
+	UserID   string
+}
+
+type contextKey string
 
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")

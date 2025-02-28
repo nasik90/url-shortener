@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	"github.com/nasik90/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 type Repository interface {
@@ -16,6 +19,8 @@ type Repository interface {
 	Ping(ctx context.Context) error
 	Close() error
 	GetShortURL(ctx context.Context, originalURL string) (string, error)
+	GetUserURLs(ctx context.Context) (map[string]string, error)
+	MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error
 }
 
 func GetShortURL(ctx context.Context, repository Repository, originalURL, host string) (string, error) {
@@ -92,4 +97,59 @@ func GetShortURLs(ctx context.Context, repository Repository, originalURLs map[s
 	}
 	err := repository.SaveShortURLs(ctx, shortOriginalURLs)
 	return shortURLs, err
+}
+
+func GetUserURLs(ctx context.Context, repository Repository, host string) (map[string]string, error) {
+	data := make(map[string]string)
+	userURLs, err := repository.GetUserURLs(ctx)
+	if err != nil {
+		return data, err
+	}
+	for shortURL, originalURL := range userURLs {
+		shortURLWithHost := shortURLWithHost(host, shortURL)
+		data[shortURLWithHost] = originalURL
+	}
+	return data, err
+}
+
+func MarkRecordsForDeletion(ctx context.Context, repository Repository, shortURLs []string, ch chan<- settings.Record) {
+	userID := userIDFromContext(ctx)
+	for _, shortURL := range shortURLs {
+		var r settings.Record
+		r.ShortURL = shortURL
+		r.UserID = userID
+		ch <- r
+	}
+}
+
+func userIDFromContext(ctx context.Context) string {
+	return ctx.Value(settings.UserIDContextKey).(string)
+}
+
+func HandleRecords(repository Repository, ch <-chan settings.Record) {
+	// будем сохранять сообщения, накопленные за последние 5 секунд
+	ticker := time.NewTicker(5 * time.Second)
+
+	var records []settings.Record
+	for {
+		select {
+		case record := <-ch:
+			// добавим сообщение в слайс для последующего сохранения
+			records = append(records, record)
+		case <-ticker.C:
+			// подождём, пока придёт хотя бы одно сообщение
+			if len(records) == 0 {
+				continue
+			}
+			// сохраним все пришедшие сообщения одновременно
+			err := repository.MarkRecordsForDeletion(context.TODO(), records...)
+			if err != nil {
+				logger.Log.Info("cannot mark records for deletion", zap.Error(err))
+				// не будем стирать сообщения, попробуем отправить их чуть позже
+				continue
+			}
+			// сотрём успешно отосланные сообщения
+			records = nil
+		}
+	}
 }

@@ -57,6 +57,14 @@ func (l *LocalCache) GetShortURL(ctx context.Context, originalURL string) (strin
 	return "", nil
 }
 
+func (l *LocalCache) GetUserURLs(ctx context.Context) (result map[string]string, err error) {
+	return result, nil
+}
+
+func (l *LocalCache) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
+	return nil
+}
+
 type FileStorage struct {
 	mu          sync.RWMutex
 	localCache  *LocalCache
@@ -148,4 +156,12 @@ func (f *FileStorage) SaveShortURLs(ctx context.Context, shortOriginalURLs map[s
 
 func (f *FileStorage) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 	return "", nil
+}
+
+func (f *FileStorage) GetUserURLs(ctx context.Context) (result map[string]string, err error) {
+	return result, nil
+}
+
+func (f *FileStorage) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
+	return nil
 }

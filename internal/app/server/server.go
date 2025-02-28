@@ -21,6 +21,9 @@ func RunServer(repository service.Repository, options *settings.Options) error {
 
 	logger.Log.Info("Running server", zap.String("address", options.ServerAddress))
 
+	ch := make(chan settings.Record)
+	go service.HandleRecords(repository, ch) // Или корректнее это в слой выше убрать?
+
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handler.GetShortURL(repository, options.BaseURL))
@@ -28,8 +31,11 @@ func RunServer(repository service.Repository, options *settings.Options) error {
 		r.Post("/api/shorten/batch", handler.GetShortURLs(repository, options.BaseURL))
 		r.Get("/{id}", handler.GetOriginalURL(repository))
 		r.Get("/ping", handler.Ping(repository))
+		r.Get("/api/user/urls", handler.GetUserURLs(repository, options.BaseURL))
+		r.Delete("/api/user/urls", handler.MarkRecordsForDeletion(repository, ch))
 	})
-	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.GzipMiddleware(r.ServeHTTP)))
+	// техдолг: причесать вызовы middleware
+	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP))))
 	if err != nil {
 		return err
 	}
