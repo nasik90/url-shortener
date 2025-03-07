@@ -4,14 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/logger"
+	"github.com/nasik90/url-shortener/internal/app/storage"
 	"go.uber.org/zap"
 )
 
@@ -45,10 +44,10 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	// создаём таблицу сообщений и необходимые индексы
 	tx.ExecContext(ctx, `
         CREATE TABLE IF NOT EXISTS urlstorage (
-            shorturl varchar(8) CONSTRAINT shorturl_pkey PRIMARY KEY,
-            originalurl varchar(512) CONSTRAINT originalurl_ukey UNIQUE,
-			userid varchar(64), 
-			deletedflag bool DEFAULT false  
+            short_url varchar(8) CONSTRAINT shorturl_pkey PRIMARY KEY NOT NULL,
+            original_url varchar(512) CONSTRAINT originalurl_ukey UNIQUE NOT NULL ,
+			user_id varchar(64) NOT NULL, 
+			deleted_flag bool DEFAULT false NOT NULL  
         )
     `)
 
@@ -56,9 +55,8 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	return tx.Commit()
 }
 
-func (s *Store) SaveShortURL(ctx context.Context, shortURL, originalURL string) error {
-	userID := userIDFromContext(ctx)
-	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (shortURL, originalURL, userid) VALUES ($1, $2, $3)`, shortURL, originalURL, userID)
+func (s *Store) SaveShortURL(ctx context.Context, shortURL, originalURL, userID string) error {
+	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (short_url, original_url, user_id) VALUES ($1, $2, $3)`, shortURL, originalURL, userID)
 	err = checkInsertError(err)
 	return err
 }
@@ -83,9 +81,9 @@ func (s *Store) GetShortURL(ctx context.Context, originalURL string) (string, er
 
 	row := s.conn.QueryRowContext(ctx, `
 	SELECT
-		shorturl
+		short_url
 	FROM urlstorage
-	WHERE originalurl = $1
+	WHERE original_url = $1
 	`, originalURL)
 
 	var shortURL string
@@ -100,10 +98,10 @@ func (s *Store) GetShortURL(ctx context.Context, originalURL string) (string, er
 func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	row := s.conn.QueryRowContext(ctx, `
 		SELECT
-			originalurl,
-			deletedflag
+			original_url,
+			deleted_flag
 		FROM urlstorage
-		WHERE shorturl = $1
+		WHERE short_url = $1
 		`, shortURL)
 
 	var (
@@ -115,12 +113,12 @@ func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, er
 		return "", err
 	}
 	if deletedFlag {
-		return originalURL, settings.ErrRecordMarkedForDel
+		return originalURL, storage.ErrRecordMarkedForDel
 	}
 	return originalURL, nil
 }
 
-func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string) error {
+func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string, userID string) error {
 	// при массовом сохранении сейчас нет проверки на уникальность вставляемых shortURL и originalURL
 	// как вижу реализацию данной проверки:
 	// блокируем строки таблицы по вставляемым shortURL и отдельно по вставляемым originalURL
@@ -130,7 +128,6 @@ func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]
 	// Все это делаем в одной транзакции
 	const batchLimit = 1000
 	shortOriginalURLBatch := make(map[string]string)
-	userID := userIDFromContext(ctx)
 	i := 0
 	for shortURL, originalURL := range shortOriginalURLs {
 		if i == batchLimit {
@@ -156,7 +153,7 @@ func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch ma
 		return err
 	}
 	defer tx.Rollback()
-	stmt, err := tx.PrepareContext(ctx, "INSERT INTO urlstorage (shortURL, originalURL, userid) VALUES ($1, $2, $3)")
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO urlstorage (short_url, original_url, user_id) VALUES ($1, $2, $3)")
 	if err != nil {
 		return err
 	}
@@ -173,15 +170,14 @@ func (s *Store) Ping(ctx context.Context) error {
 	return s.conn.PingContext(ctx)
 }
 
-func (s *Store) GetUserURLs(ctx context.Context) (map[string]string, error) {
-	userID := userIDFromContext(ctx)
+func (s *Store) GetUserURLs(ctx context.Context, userID string) (map[string]string, error) {
 	data := make(map[string]string)
 	rows, err := s.conn.QueryContext(ctx, `
 	SELECT
-		shorturl,
-		originalurl
+		short_url,
+		original_url
 	FROM urlstorage
-	WHERE userid = $1
+	WHERE user_id = $1
 	`, userID)
 
 	if err != nil {
@@ -205,33 +201,22 @@ func (s *Store) GetUserURLs(ctx context.Context) (map[string]string, error) {
 	return data, nil
 }
 
-func userIDFromContext(ctx context.Context) string {
-	return ctx.Value(settings.UserIDContextKey).(string)
-}
-
 func (s *Store) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
 	for _, r := range records {
 		logger.Log.Info("record marked for deletion(plan)", zap.String("shortURL", r.ShortURL), zap.String("userID", r.UserID))
 	}
 
-	var values []string
-	var args []any
-	for i, r := range records {
-		base := i * 2
-		params := fmt.Sprintf("($%d, $%d)", base+1, base+2)
-		values = append(values, params)
-		args = append(args, r.ShortURL, r.UserID)
+	var shortURLs, userIDs []string
+	for _, r := range records {
+		shortURLs = append(shortURLs, r.ShortURL)
+		userIDs = append(userIDs, r.UserID)
 	}
+
 	query := `
-		UPDATE urlstorage
-		SET deletedflag = true
-		FROM (VALUES` + strings.Join(values, ",") + `
-		) AS data(shorturl, userid)
-		WHERE urlstorage.shorturl = data.shorturl and urlstorage.userid = data.userid;`
+		UPDATE urlstorage SET deleted_flag = true FROM unnest($1::text[],$2::text[]) AS input(short_url, user_id) WHERE urlstorage.short_url = input.short_url and urlstorage.user_id = input.user_id 
+	`
 
-	// WHERE urlstorage.shorturl = data.shorturl and urlstorage.userid = data.userid;`
-
-	res, err := s.conn.ExecContext(ctx, query, args...)
+	res, err := s.conn.ExecContext(ctx, query, shortURLs, userIDs)
 	if err != nil {
 		return err
 	}

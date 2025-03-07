@@ -2,19 +2,39 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
-	"github.com/nasik90/url-shortener/internal/app/service"
+	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
+	"github.com/nasik90/url-shortener/internal/app/storage"
 )
 
-func GetShortURL(repository service.Repository, host string) http.HandlerFunc {
+type Service interface {
+	GetShortURL(ctx context.Context, originalURL, userID string) (string, error)
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	GetShortURLs(ctx context.Context, originalURLs map[string]string, userID string) (map[string]string, error)
+	GetUserURLs(ctx context.Context, userID string) (map[string]string, error)
+	MarkRecordsForDeletion(ctx context.Context, shortURLs []string, userID string)
+	Ping(ctx context.Context) error
+}
+
+type Handler struct {
+	service Service
+}
+
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
+}
+
+func (h *Handler) GetShortURL() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
 		ctx := req.Context()
+		userID := middleware.UserIDFromContext(ctx)
 		_, err := buf.ReadFrom(req.Body)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -26,7 +46,7 @@ func GetShortURL(repository service.Repository, host string) http.HandlerFunc {
 			return
 		}
 		status := http.StatusCreated
-		shortURL, err := service.GetShortURL(ctx, repository, originalURL, host)
+		shortURL, err := h.service.GetShortURL(ctx, originalURL, userID)
 		if err != nil {
 			if errors.Is(err, settings.ErrOriginalURLNotUnique) {
 				status = http.StatusConflict
@@ -41,13 +61,13 @@ func GetShortURL(repository service.Repository, host string) http.HandlerFunc {
 	}
 }
 
-func GetOriginalURL(repository service.Repository) http.HandlerFunc {
+func (h *Handler) GetOriginalURL() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		id := strings.Trim(req.URL.Path, "/")
-		originalURL, err := service.GetOriginalURL(ctx, repository, id)
+		originalURL, err := h.service.GetOriginalURL(ctx, id)
 		if err != nil {
-			if err == settings.ErrRecordMarkedForDel {
+			if err == storage.ErrRecordMarkedForDel {
 				http.Error(res, err.Error(), http.StatusGone)
 				return
 			}
@@ -59,9 +79,10 @@ func GetOriginalURL(repository service.Repository) http.HandlerFunc {
 	}
 }
 
-func GetShortURLJSON(repository service.Repository, host string) http.HandlerFunc {
+func (h *Handler) GetShortURLJSON() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		userID := middleware.UserIDFromContext(ctx)
 		var input struct {
 			URL string `json:"url"`
 		}
@@ -76,7 +97,7 @@ func GetShortURLJSON(repository service.Repository, host string) http.HandlerFun
 		}
 
 		status := http.StatusCreated
-		shortURL, err := service.GetShortURL(ctx, repository, input.URL, host)
+		shortURL, err := h.service.GetShortURL(ctx, input.URL, userID)
 		if err != nil {
 			if errors.Is(err, settings.ErrOriginalURLNotUnique) {
 				status = http.StatusConflict
@@ -101,9 +122,10 @@ func GetShortURLJSON(repository service.Repository, host string) http.HandlerFun
 	}
 }
 
-func Ping(repository service.Repository) http.HandlerFunc {
+func (h *Handler) Ping() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		err := repository.Ping(req.Context())
+		ctx := req.Context()
+		err := h.service.Ping(ctx)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -111,9 +133,10 @@ func Ping(repository service.Repository) http.HandlerFunc {
 	}
 }
 
-func GetShortURLs(repository service.Repository, host string) http.HandlerFunc {
+func (h *Handler) GetShortURLs() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		userID := middleware.UserIDFromContext(ctx)
 		type input struct {
 			СorrelationID string `json:"correlation_id"`
 			OriginalURL   string `json:"original_url"`
@@ -127,7 +150,7 @@ func GetShortURLs(repository service.Repository, host string) http.HandlerFunc {
 		for _, in := range s {
 			originalURLs[in.СorrelationID] = in.OriginalURL
 		}
-		shortURLs, err := service.GetShortURLs(ctx, repository, originalURLs, host)
+		shortURLs, err := h.service.GetShortURLs(ctx, originalURLs, userID)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -153,10 +176,11 @@ func GetShortURLs(repository service.Repository, host string) http.HandlerFunc {
 	}
 }
 
-func GetUserURLs(repository service.Repository, host string) http.HandlerFunc {
+func (h *Handler) GetUserURLs() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		UserURLs, err := service.GetUserURLs(ctx, repository, host)
+		userID := middleware.UserIDFromContext(ctx)
+		UserURLs, err := h.service.GetUserURLs(ctx, userID)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -187,15 +211,16 @@ func GetUserURLs(repository service.Repository, host string) http.HandlerFunc {
 	}
 }
 
-func MarkRecordsForDeletion(repository service.Repository, ch chan<- settings.Record) http.HandlerFunc {
+func (h *Handler) MarkRecordsForDeletion() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var s []string
+		ctx := req.Context()
+		userID := middleware.UserIDFromContext(ctx)
 		if err := json.NewDecoder(req.Body).Decode(&s); err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		ctx := req.Context()
-		service.MarkRecordsForDeletion(ctx, repository, s, ch)
+		h.service.MarkRecordsForDeletion(ctx, s, userID)
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusAccepted)
 	}

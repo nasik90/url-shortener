@@ -7,9 +7,11 @@ import (
 )
 
 type Event struct {
-	UUID        string `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	UUID         string `json:"uuid"`
+	ShortURL     string `json:"short_url"`
+	OriginalURL  string `json:"original_url"`
+	UserID       string `json:"user_id"`
+	MarkedForDel bool   `json:"del"`
 }
 
 type Producer struct {

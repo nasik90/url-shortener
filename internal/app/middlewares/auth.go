@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
 // Claims — структура утверждений, которая включает стандартные утверждения
@@ -17,6 +16,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
+
+type UserIDContextKey struct{}
 
 const tokenExp = time.Hour * 3
 const secretKey = "supersecretkey"
@@ -45,8 +46,6 @@ func buildJWTString() (string, error) {
 
 func Auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		// cookies := r.Header.Get("Authorization")
-		// fmt.Println(cookies)
 		const (
 			cookieName = "auth"
 		)
@@ -71,7 +70,7 @@ func Auth(h http.HandlerFunc) http.HandlerFunc {
 			res.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(req.Context(), settings.UserIDContextKey, userID)
+		ctx := context.WithValue(req.Context(), UserIDContextKey{}, userID)
 		req = req.WithContext(ctx)
 		h.ServeHTTP(res, req)
 	}
@@ -91,10 +90,12 @@ func getUserID(tokenString string) (string, error) {
 	}
 
 	if !token.Valid {
-		// fmt.Println("Token is not valid")
 		return "", fmt.Errorf("token is not valid")
 	}
 
-	// fmt.Println("Token os valid")
 	return claims.UserID, nil
+}
+
+func UserIDFromContext(ctx context.Context) string {
+	return ctx.Value(UserIDContextKey{}).(string)
 }
