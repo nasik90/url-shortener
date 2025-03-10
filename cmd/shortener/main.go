@@ -21,8 +21,14 @@ import (
 )
 
 func main() {
+
 	options := new(settings.Options)
 	settings.ParseFlags(options)
+
+	if err := logger.Initialize(options.LogLevel); err != nil {
+		panic(err)
+	}
+
 	var (
 		repo service.Repository
 		err  error
@@ -71,14 +77,12 @@ func main() {
 
 	go service.HandleRecords()
 
-	//go func() {
-	err = server.RunServer(repo, options)
+	err = server.RunServer()
 	if err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			logger.Log.Fatal("run server", zap.String("error", err.Error()))
 		}
 	}
-	//}()
 
 	wg.Wait()
 	logger.Log.Info("closed gracefuly")

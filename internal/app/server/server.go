@@ -4,11 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
-	"github.com/nasik90/url-shortener/internal/app/service"
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
@@ -26,11 +24,7 @@ func NewServer(handler *handler.Handler, serverAddress string) *Server {
 	return s
 }
 
-func (s *Server) RunServer(repository service.Repository, options *settings.Options) error {
-
-	if err := logger.Initialize(options.LogLevel); err != nil {
-		return err
-	}
+func (s *Server) RunServer() error {
 
 	logger.Log.Info("Running server", zap.String("address", s.Addr))
 
@@ -46,7 +40,6 @@ func (s *Server) RunServer(repository service.Repository, options *settings.Opti
 	})
 	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
 	err := s.ListenAndServe()
-	//err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP))))
 	if err != nil {
 		return err
 	}
