@@ -1,39 +1,52 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
-	"github.com/nasik90/url-shortener/internal/app/service"
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func RunServer(repository service.Repository, options *settings.Options) error {
+type Server struct {
+	http.Server
+	handler *handler.Handler
+}
 
-	if err := logger.Initialize(options.LogLevel); err != nil {
-		return err
-	}
+func NewServer(handler *handler.Handler, serverAddress string) *Server {
+	s := &Server{}
+	s.Addr = serverAddress
+	s.handler = handler
+	return s
+}
 
-	logger.Log.Info("Running server", zap.String("address", options.ServerAddress))
+func (s *Server) RunServer() error {
+
+	logger.Log.Info("Running server", zap.String("address", s.Addr))
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Post("/", handler.GetShortURL(repository, options.BaseURL))
-		r.Post("/api/shorten", handler.GetShortURLJSON(repository, options.BaseURL))
-		r.Post("/api/shorten/batch", handler.GetShortURLs(repository, options.BaseURL))
-		r.Get("/{id}", handler.GetOriginalURL(repository))
-		r.Get("/ping", handler.Ping(repository))
+		r.Post("/", s.handler.GetShortURL())
+		r.Post("/api/shorten", s.handler.GetShortURLJSON())
+		r.Post("/api/shorten/batch", s.handler.GetShortURLs())
+		r.Get("/{id}", s.handler.GetOriginalURL())
+		r.Get("/ping", s.handler.Ping())
+		r.Get("/api/user/urls", s.handler.GetUserURLs())
+		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
 	})
-	err := http.ListenAndServe(options.ServerAddress, logger.RequestLogger(middleware.GzipMiddleware(r.ServeHTTP)))
+	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
+	err := s.ListenAndServe()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
 
+func (s *Server) StopServer() error {
+	return s.Shutdown(context.Background())
 }

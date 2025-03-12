@@ -25,6 +25,11 @@ type Options struct {
 	DatabaseDSN   string
 }
 
+type Record struct {
+	ShortURL string
+	UserID   string
+}
+
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
