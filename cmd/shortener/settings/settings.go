@@ -18,11 +18,13 @@ var (
 )
 
 type Options struct {
-	ServerAddress string
-	BaseURL       string
-	LogLevel      string
-	FilePath      string
-	DatabaseDSN   string
+	ServerAddress      string
+	BaseURL            string
+	LogLevel           string
+	FilePath           string
+	DatabaseDSN        string
+	EnablePprofServ    bool
+	PprofServerAddress string
 }
 
 type Record struct {
@@ -35,8 +37,10 @@ func ParseFlags(o *Options) {
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
-	//flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
-	flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
+	flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
+	//flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
+	flag.BoolVar(&o.EnablePprofServ, "p", true, "enable pprof server")
+	flag.StringVar(&o.PprofServerAddress, "pa", ":8181", "address and port to run pprof server")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {

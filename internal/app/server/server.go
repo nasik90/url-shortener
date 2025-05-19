@@ -29,6 +29,7 @@ func (s *Server) RunServer() error {
 	logger.Log.Info("Running server", zap.String("address", s.Addr))
 
 	r := chi.NewRouter()
+	//r.Mount("/debug", middleware.Profiler())
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", s.handler.GetShortURL())
 		r.Post("/api/shorten", s.handler.GetShortURLJSON())
@@ -38,6 +39,8 @@ func (s *Server) RunServer() error {
 		r.Get("/api/user/urls", s.handler.GetUserURLs())
 		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
 	})
+	//r.Mount("/debug/pprof", http.HandlerFunc(pprof.Index)) // Главная страница pprof
+	//r.Mount("/debug/pprof/", http.DefaultServeMux) // Все маршруты pprof
 	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
 	err := s.ListenAndServe()
 	if err != nil {

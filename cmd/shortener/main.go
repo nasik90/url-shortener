@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	_ "net/http/pprof"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
@@ -27,6 +30,15 @@ func main() {
 
 	if err := logger.Initialize(options.LogLevel); err != nil {
 		panic(err)
+	}
+
+	if options.EnablePprofServ {
+		go func() {
+			if err := http.ListenAndServe(options.PprofServerAddress, nil); err != nil {
+				logger.Log.Error("run pprof server", zap.Error(err))
+			}
+			logger.Log.Info("run pprof server", zap.String("addr", options.PprofServerAddress))
+		}()
 	}
 
 	var (
