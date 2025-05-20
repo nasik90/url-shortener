@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
-	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 )

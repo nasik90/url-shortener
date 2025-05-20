@@ -7,9 +7,10 @@ import (
 	"math/big"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/logger"
-	"go.uber.org/zap"
 )
 
 type Repository interface {

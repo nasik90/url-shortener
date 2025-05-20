@@ -11,6 +11,8 @@ import (
 	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
+
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
@@ -18,7 +20,6 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
 	"github.com/nasik90/url-shortener/internal/app/storage/pg"
-	"go.uber.org/zap"
 )
 
 func main() {

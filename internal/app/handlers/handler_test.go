@@ -11,12 +11,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
 	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetShortURL(t *testing.T) {
