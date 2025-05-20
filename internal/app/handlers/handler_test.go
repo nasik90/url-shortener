@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -66,6 +68,24 @@ func TestGetShortURL(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
+	}
+}
+
+func BenchmarkGetShortURL(b *testing.B) {
+	repo := storage.NewLocalCahce()
+	userID := "123"
+	for i := 0; i < b.N; i++ {
+		originalURL := "testBench" + strconv.Itoa(rand.Int()) + ".ru"
+		body := httptest.NewRecorder().Body
+		body.Write([]byte(originalURL))
+		request := httptest.NewRequest(http.MethodPost, "/", body).
+			WithContext(context.WithValue(context.Background(), middleware.UserIDContextKey{}, userID))
+		w := httptest.NewRecorder()
+
+		service := service.NewService(repo, request.Host)
+		handler := NewHandler(service)
+
+		handler.GetShortURL()(w, request)
 	}
 }
 
