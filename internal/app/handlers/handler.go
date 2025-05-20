@@ -1,3 +1,4 @@
+// Модуль handler содержит реализацию http методов.
 package handler
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/storage"
 )
 
+// Service - интерфейс, который описывает методы объектов с типом Service
 type Service interface {
 	GetShortURL(ctx context.Context, originalURL, userID string) (string, error)
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
@@ -22,14 +24,18 @@ type Service interface {
 	Ping(ctx context.Context) error
 }
 
+// Handler - структура, хранящая объект типа Service.
 type Handler struct {
 	service Service
 }
 
+// NewHandler создает экземпляр объекта Handler.
 func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetShortURL - метод для получения короткого URL по переданному оригинальному URL.
+// Оригинальнаый URL передается в теле запроса.
 func (h *Handler) GetShortURL() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
@@ -61,6 +67,7 @@ func (h *Handler) GetShortURL() http.HandlerFunc {
 	}
 }
 
+// GetOriginalURL - метод для получения оригинального URL по переданному короткому URL.
 func (h *Handler) GetOriginalURL() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -79,6 +86,8 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 	}
 }
 
+// GetShortURLJSON - метод для получения короткого URL по переданному оригинальному URL.
+// Оригинальнаый URL передается в теле запроса в JSON.
 func (h *Handler) GetShortURLJSON() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -122,6 +131,7 @@ func (h *Handler) GetShortURLJSON() http.HandlerFunc {
 	}
 }
 
+// Ping - проверяет работоспособность сервера и БД.
 func (h *Handler) Ping() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -133,6 +143,8 @@ func (h *Handler) Ping() http.HandlerFunc {
 	}
 }
 
+// GetShortURLs - принимает на вход массив структур с указанием correlation_id и оригинального URL.
+// Возвращает массив струкур с указанием correlation_id и короткого URL.
 func (h *Handler) GetShortURLs() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -176,6 +188,8 @@ func (h *Handler) GetShortURLs() http.HandlerFunc {
 	}
 }
 
+// GetUserURLs - возвращает список URL`ов пользователя.
+// Список представляет собой массив структур с указанием короткого и оригинального URL.
 func (h *Handler) GetUserURLs() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -211,6 +225,7 @@ func (h *Handler) GetUserURLs() http.HandlerFunc {
 	}
 }
 
+// MarkRecordsForDeletion помечает на удаление переданные в массиве короткие URL
 func (h *Handler) MarkRecordsForDeletion() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var s []string
