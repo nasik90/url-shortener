@@ -14,12 +14,14 @@ type Event struct {
 	MarkedForDel bool   `json:"del"`
 }
 
+// Producer - структура для хранения данных о писателе в файл.
 type Producer struct {
 	file *os.File
 	// добавляем Writer в Producer
 	writer *bufio.Writer
 }
 
+// NewProducer создает экземпляр типа Producer.
 func NewProducer(filename string) (*Producer, error) {
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -33,6 +35,7 @@ func NewProducer(filename string) (*Producer, error) {
 	}, nil
 }
 
+// WriteEvent пишет в файл событие типа Event.
 func (p *Producer) WriteEvent(event *Event) error {
 	data, err := json.Marshal(&event)
 	if err != nil {
@@ -53,6 +56,7 @@ func (p *Producer) WriteEvent(event *Event) error {
 	return p.writer.Flush()
 }
 
+// Close закрывает писателя в файл.
 func (p *Producer) Close() error {
 	// закрываем файл
 	if err := p.writer.Flush(); err != nil {
@@ -61,12 +65,14 @@ func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
+// Consumer - структура, хранящая данные о читателя из файла.
 type Consumer struct {
 	file *os.File
 	// добавляем reader в Consumer
 	reader *bufio.Reader
 }
 
+// NewConsumer создает экземпляр типа Consumer.
 func NewConsumer(filename string) (*Consumer, error) {
 	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -80,6 +86,7 @@ func NewConsumer(filename string) (*Consumer, error) {
 	}, nil
 }
 
+// ReadEvent читает из файла данные и возвращает струтуру типа Event.
 func (c *Consumer) ReadEvent() (*Event, error) {
 	// читаем данные до символа переноса строки
 	data, err := c.reader.ReadBytes('\n')
@@ -97,6 +104,7 @@ func (c *Consumer) ReadEvent() (*Event, error) {
 	return &event, nil
 }
 
+// Close закрывает читателя файла.
 func (c *Consumer) Close() error {
 	// закрываем файл
 	return c.file.Close()

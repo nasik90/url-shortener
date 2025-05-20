@@ -1,3 +1,4 @@
+// Пакет logger содержит методы для логирования http методов.
 package logger
 
 import (

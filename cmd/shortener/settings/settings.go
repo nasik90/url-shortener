@@ -1,3 +1,4 @@
+// Пакет settings содержит настройки сервиса.
 package settings
 
 import (
@@ -7,16 +8,22 @@ import (
 )
 
 const (
-	ShortURLlen     = 8
+	// ShortURLlen - длина короткого URL.
+	ShortURLlen = 8
+	// TemplateForRand - допустимые символы для формирования короткого URL.
 	TemplateForRand = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )
 
 var (
-	ErrOriginalURLNotFound  = errors.New("original URL not found")
+	// ErrOriginalURLNotFound - ошибка - оригинальный URL не найден.
+	ErrOriginalURLNotFound = errors.New("original URL not found")
+	// ErrOriginalURLNotUnique - ошибка - оригинальный URL не уникальный.
 	ErrOriginalURLNotUnique = errors.New("original URL is not unique")
-	ErrShortURLNotUnique    = errors.New("short URL is not unique")
+	// ErrShortURLNotUnique - ошибка - короткий URL не найден.
+	ErrShortURLNotUnique = errors.New("short URL is not unique")
 )
 
+// Options - структура для хранения настроек сервиса.
 type Options struct {
 	ServerAddress      string
 	BaseURL            string
@@ -27,11 +34,14 @@ type Options struct {
 	PprofServerAddress string
 }
 
+// Record - структура для хранения короткого URL - UserID.
 type Record struct {
 	ShortURL string
 	UserID   string
 }
 
+// ParseFlags - парсит флаги командной строки или переменные окружения.
+// Результат сохраняет в структуру Options.
 func ParseFlags(o *Options) {
 	flag.StringVar(&o.ServerAddress, "a", ":8080", "address and port to run server")
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")

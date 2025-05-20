@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// GzipMiddleware сжимает ответы и "расжимает" запросы.ц
 func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,
