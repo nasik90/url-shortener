@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// Event - структура для хранения данных в json в файле.
 type Event struct {
 	UUID         string `json:"uuid"`
 	ShortURL     string `json:"short_url"`
@@ -104,7 +105,7 @@ func (c *Consumer) ReadEvent() (*Event, error) {
 	return &event, nil
 }
 
-// Close закрывает читателя файла.
+// Close закрывает читателя фай
 func (c *Consumer) Close() error {
 	// закрываем файл
 	return c.file.Close()

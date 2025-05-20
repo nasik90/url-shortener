@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// Настройки короткого URL.
 const (
 	// ShortURLlen - длина короткого URL.
 	ShortURLlen = 8
@@ -14,6 +15,7 @@ const (
 	TemplateForRand = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )
 
+// Переменные - ошибки.
 var (
 	// ErrOriginalURLNotFound - ошибка - оригинальный URL не найден.
 	ErrOriginalURLNotFound = errors.New("original URL not found")

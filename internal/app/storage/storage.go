@@ -11,6 +11,7 @@ import (
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
+// Переменные - коды ошибок.
 var (
 	// ErrRecordMarkedForDel - ошибка для обозначения помеченной на удаление записи.
 	ErrRecordMarkedForDel = errors.New("record marked for deletion")
@@ -69,10 +70,12 @@ func (l *LocalCache) GetOriginalURL(ctx context.Context, shortURL string) (strin
 	return originalURL, nil
 }
 
+// Ping - заглушка для закрытия интерфейса.
 func (l *LocalCache) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Close - заглушка для закрытия интерфейса.
 func (l *LocalCache) Close() error {
 	return nil
 }
@@ -198,6 +201,7 @@ func restoreData(f *FileStorage) error {
 	return nil
 }
 
+// Ping - заглушка для закрытия интерфейса.
 func (f *FileStorage) Ping(ctx context.Context) error {
 	return nil
 }
