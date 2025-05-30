@@ -15,7 +15,7 @@ func ExampleHandler_GetShortURL() {
 	settings.ParseFlags(options)
 
 	originalURL := "http://ya.ru"
-	endpoint := options.BaseURL
+	endpoint := options.ServerAddress
 	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		// Возвращаем ошибку, чтобы отключить перенаправление
 		return http.ErrUseLastResponse
