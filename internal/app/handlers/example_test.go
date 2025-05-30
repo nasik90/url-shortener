@@ -5,12 +5,17 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 )
 
 func ExampleHandler_GetShortURL() {
 
+	options := new(settings.Options)
+	settings.ParseFlags(options)
+
 	originalURL := "http://ya.ru"
-	endpoint := "http://localhost:8080/"
+	endpoint := options.BaseURL
 	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		// Возвращаем ошибку, чтобы отключить перенаправление
 		return http.ErrUseLastResponse
@@ -54,8 +59,11 @@ func ExampleHandler_GetShortURL() {
 
 func ExampleHandler_GetOriginalURL() {
 
+	options := new(settings.Options)
+	settings.ParseFlags(options)
+
 	originalURL := "http://habr.ru"
-	endpoint := "http://localhost:8080/"
+	endpoint := options.BaseURL
 	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		// Возвращаем ошибку, чтобы отключить перенаправление
 		return http.ErrUseLastResponse
