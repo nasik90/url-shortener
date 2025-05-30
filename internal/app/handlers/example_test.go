@@ -9,15 +9,17 @@ import (
 
 func ExampleHandler_GetShortURL() {
 
-	shortURL := "ya.ru"
+	originalURL := "http://ya.ru"
 	endpoint := "http://localhost:8080/"
-	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(shortURL))
+	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		// Возвращаем ошибку, чтобы отключить перенаправление
+		return http.ErrUseLastResponse
+	}}
+	// Запросим короткий URL
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(originalURL))
 	if err != nil {
 		panic(err)
 	}
-	// в заголовках запроса указываем кодировку
-	// request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		panic(err)
@@ -27,5 +29,69 @@ func ExampleHandler_GetShortURL() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(body))
+	defer response.Body.Close()
+	fmt.Println(response.StatusCode)
+	responseBody := string(body)
+
+	// Запросим оригинальный URL для проверки, что вернется корректный URL
+	request, err = http.NewRequest(http.MethodGet, responseBody, nil)
+	if err != nil {
+		panic(err)
+	}
+	response, err = client.Do(request)
+	if err != nil {
+		panic(err)
+	}
+	originalURL = response.Header.Get("Location")
+	fmt.Println(response.StatusCode)
+	fmt.Println(originalURL)
+
+	// Output:
+	// 201
+	// 307
+	// http://ya.ru
+}
+
+func ExampleHandler_GetOriginalURL() {
+
+	originalURL := "http://habr.ru"
+	endpoint := "http://localhost:8080/"
+	client := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		// Возвращаем ошибку, чтобы отключить перенаправление
+		return http.ErrUseLastResponse
+	}}
+	// Запросим короткий URL, чтобы в дальнейшем получить оригинальный URL
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(originalURL))
+	if err != nil {
+		panic(err)
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(response.StatusCode)
+	responseBody := string(body)
+
+	// Запросим оригинальный URL
+	request, err = http.NewRequest(http.MethodGet, responseBody, nil)
+	if err != nil {
+		panic(err)
+	}
+	response, err = client.Do(request)
+	if err != nil {
+		panic(err)
+	}
+	originalURL = response.Header.Get("Location")
+	fmt.Println(response.StatusCode)
+	fmt.Println(originalURL)
+
+	// Output:
+	// 201
+	// 307
+	// http://habr.ru
 }
