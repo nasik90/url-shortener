@@ -1,22 +1,27 @@
+// Модуль server служит для запуска сервера с указанием http методов.
 package server
 
 import (
 	"context"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
-	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 )
 
+// Server - структура, которая характеризует сервер.
+// Содержит встроенную структуру из типовой библиотеки http.Server и handler.
 type Server struct {
 	http.Server
 	handler *handler.Handler
 }
 
+// NewServer создает экземпляр структуры Server.
 func NewServer(handler *handler.Handler, serverAddress string) *Server {
 	s := &Server{}
 	s.Addr = serverAddress
@@ -24,6 +29,7 @@ func NewServer(handler *handler.Handler, serverAddress string) *Server {
 	return s
 }
 
+// RunServer запускает сервер.
 func (s *Server) RunServer() error {
 
 	logger.Log.Info("Running server", zap.String("address", s.Addr))
@@ -47,6 +53,7 @@ func (s *Server) RunServer() error {
 	return nil
 }
 
+// RunServer останавливает сервер.
 func (s *Server) StopServer() error {
 	return s.Shutdown(context.Background())
 }

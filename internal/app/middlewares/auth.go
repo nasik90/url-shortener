@@ -1,3 +1,4 @@
+// Пакет middleware служит для выполнения промежуточных действий до выполнения основной обработки.
 package middleware
 
 import (
@@ -17,6 +18,7 @@ type Claims struct {
 	UserID string
 }
 
+// UserIDContextKey - тип для
 type UserIDContextKey struct{}
 
 const tokenExp = time.Hour * 3
@@ -44,6 +46,7 @@ func buildJWTString() (string, error) {
 	return tokenString, nil
 }
 
+// Auth выполняет аутентификацию пользователя.
 func Auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		const (
@@ -96,6 +99,7 @@ func getUserID(tokenString string) (string, error) {
 	return claims.UserID, nil
 }
 
+// UserIDFromContext возвращает id пользователя из переданного контекста.
 func UserIDFromContext(ctx context.Context) string {
 	return ctx.Value(UserIDContextKey{}).(string)
 }

@@ -1,3 +1,4 @@
+// Модуль service служит для реализации бизнес логики.
 package service
 
 import (
@@ -5,13 +6,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
-	"time"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
-	"github.com/nasik90/url-shortener/internal/app/logger"
-	"go.uber.org/zap"
 )
 
+// Интерфейс Repository описывает методы типа Repository.
 type Repository interface {
 	SaveShortURL(ctx context.Context, shortURL, originalURL, userID string) error
 	SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string, userID string) error
@@ -23,16 +22,19 @@ type Repository interface {
 	MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error
 }
 
+// Service - структура, которая хранит ссылку на репозиторий, адрес хоста и канал для хранения URL`ов к удалению.
 type Service struct {
 	repo          Repository
 	host          string
 	recordsForDel chan settings.Record
 }
 
+// NewService создает экземпляр объекта типа Service.
 func NewService(store Repository, host string) *Service {
 	return &Service{repo: store, host: host, recordsForDel: make(chan settings.Record)}
 }
 
+// GetShortURL - реализует логику по получению короткой ссылки по оригинальной.
 func (s *Service) GetShortURL(ctx context.Context, originalURL, userID string) (string, error) {
 	shortURL, err := newShortURL()
 	if err != nil {
@@ -60,6 +62,7 @@ func (s *Service) GetShortURL(ctx context.Context, originalURL, userID string) (
 	return shortURLWithHost, nil
 }
 
+// GetOriginalURL - реализует логику по получению оригинальной ссылки по короткому
 func (s *Service) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	originalURL, err := s.repo.GetOriginalURL(ctx, shortURL)
 	if err != nil {
@@ -92,6 +95,9 @@ func newShortURL() (string, error) {
 	return randomString(settings.ShortURLlen)
 }
 
+// GetShortURLs - реализует логику по получению списка коротких ссылок по переданным коротким.
+// На входе принимает мапу, где ключ - id, значение - оригинальный урл.
+// На выходе тот же id, значение - короткий урл.
 func (s *Service) GetShortURLs(ctx context.Context, originalURLs map[string]string, userID string) (map[string]string, error) {
 	shortURLs := make(map[string]string)
 	shortOriginalURLs := make(map[string]string)
@@ -109,6 +115,8 @@ func (s *Service) GetShortURLs(ctx context.Context, originalURLs map[string]stri
 	return shortURLs, err
 }
 
+// GetUserURLs - реализует логику получения списка коротких и оригинальных урлов пользователя.
+// На входе id пользователя, на выходе мапа(ключ - короткий урл, значение - оригинальный).
 func (s *Service) GetUserURLs(ctx context.Context, userID string) (map[string]string, error) {
 	data := make(map[string]string)
 	userURLs, err := s.repo.GetUserURLs(ctx, userID)
@@ -122,6 +130,8 @@ func (s *Service) GetUserURLs(ctx context.Context, userID string) (map[string]st
 	return data, err
 }
 
+// MarkRecordsForDeletion - реализует логику пометки на удаление переданный коротких урл пользователя.
+// В данном методе короткие урлы помещаются в канал recordsForDel.
 func (s *Service) MarkRecordsForDeletion(ctx context.Context, shortURLs []string, userID string) {
 	for _, shortURL := range shortURLs {
 		r := settings.Record{
@@ -132,34 +142,7 @@ func (s *Service) MarkRecordsForDeletion(ctx context.Context, shortURLs []string
 	}
 }
 
-func (s *Service) HandleRecords() {
-	// будем сохранять сообщения, накопленные за последние 5 секунд
-	ticker := time.NewTicker(5 * time.Second)
-
-	var records []settings.Record
-	for {
-		select {
-		case record := <-s.recordsForDel:
-			// добавим сообщение в слайс для последующего сохранения
-			records = append(records, record)
-		case <-ticker.C:
-			// подождём, пока придёт хотя бы одно сообщение
-			if len(records) == 0 {
-				continue
-			}
-			// сохраним все пришедшие сообщения одновременно
-			err := s.repo.MarkRecordsForDeletion(context.TODO(), records...)
-			if err != nil {
-				logger.Log.Info("cannot mark records for deletion", zap.Error(err))
-				// не будем стирать сообщения, попробуем отправить их чуть позже
-				continue
-			}
-			// сотрём успешно отосланные сообщения
-			records = nil
-		}
-	}
-}
-
+// Ping - пингует БД.
 func (s *Service) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }

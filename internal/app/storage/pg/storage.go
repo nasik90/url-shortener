@@ -1,3 +1,4 @@
+// Пакет pg реализует работу с БД postgresql.
 package pg
 
 import (
@@ -8,16 +9,19 @@ import (
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"go.uber.org/zap"
+
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	"github.com/nasik90/url-shortener/internal/app/storage"
-	"go.uber.org/zap"
 )
 
+// Store - структура для хранения подключения к БД.
 type Store struct {
 	conn *sql.DB
 }
 
+// NewStore создает экземпляр структуры Store.
 func NewStore(conn *sql.DB) (*Store, error) {
 	s := &Store{conn: conn}
 	err := s.Bootstrap(context.Background())
@@ -27,11 +31,12 @@ func NewStore(conn *sql.DB) (*Store, error) {
 	return s, nil
 }
 
+// Close закрывает соединение с БД.
 func (s Store) Close() error {
 	return s.conn.Close()
 }
 
-// Bootstrap подготавливает БД к работе, создавая необходимые таблицы и индексы
+// Bootstrap подготавливает БД к работе, создавая необходимые таблицы и индексы.
 func (s Store) Bootstrap(ctx context.Context) error {
 	// запускаем транзакцию
 	tx, err := s.conn.BeginTx(ctx, nil)
@@ -41,7 +46,7 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	// в случае неуспешного коммита все изменения транзакции будут отменены
 	defer tx.Rollback()
 
-	// создаём таблицу сообщений и необходимые индексы
+	// создаём таблицу сообщений и необходимые индексы.
 	tx.ExecContext(ctx, `
         CREATE TABLE IF NOT EXISTS urlstorage (
             short_url varchar(8) CONSTRAINT shorturl_pkey PRIMARY KEY NOT NULL,
@@ -55,6 +60,7 @@ func (s Store) Bootstrap(ctx context.Context) error {
 	return tx.Commit()
 }
 
+// SaveShortURL добавляет запись в таблицу urlstorage.
 func (s *Store) SaveShortURL(ctx context.Context, shortURL, originalURL, userID string) error {
 	_, err := s.conn.ExecContext(ctx, `INSERT INTO urlstorage (short_url, original_url, user_id) VALUES ($1, $2, $3)`, shortURL, originalURL, userID)
 	err = checkInsertError(err)
@@ -77,6 +83,7 @@ func checkInsertError(err error) error {
 	return err
 }
 
+// GetShortURL получает короткий урл из переданного оригинального.
 func (s *Store) GetShortURL(ctx context.Context, originalURL string) (string, error) {
 
 	row := s.conn.QueryRowContext(ctx, `
@@ -95,6 +102,7 @@ func (s *Store) GetShortURL(ctx context.Context, originalURL string) (string, er
 
 }
 
+// GetOriginalURL возвращает оригинальный урл по переданному короткому.
 func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	row := s.conn.QueryRowContext(ctx, `
 		SELECT
@@ -118,6 +126,7 @@ func (s *Store) GetOriginalURL(ctx context.Context, shortURL string) (string, er
 	return originalURL, nil
 }
 
+// SaveShortURLs добавляет записи в таблицу urlstorage.
 func (s *Store) SaveShortURLs(ctx context.Context, shortOriginalURLs map[string]string, userID string) error {
 	// при массовом сохранении сейчас нет проверки на уникальность вставляемых shortURL и originalURL
 	// как вижу реализацию данной проверки:
@@ -166,10 +175,13 @@ func (s *Store) saveShortURLsBatch(ctx context.Context, shortOriginalURLBatch ma
 	return tx.Commit()
 }
 
+// Ping проверяет работоспособность БД.
 func (s *Store) Ping(ctx context.Context) error {
 	return s.conn.PingContext(ctx)
 }
 
+// GetUserURLs возвращает список урлов пользователя.
+// Возвращает мапу (ключ - короткий урл, значение - оригинальный).
 func (s *Store) GetUserURLs(ctx context.Context, userID string) (map[string]string, error) {
 	data := make(map[string]string)
 	rows, err := s.conn.QueryContext(ctx, `
@@ -201,6 +213,7 @@ func (s *Store) GetUserURLs(ctx context.Context, userID string) (map[string]stri
 	return data, nil
 }
 
+// MarkRecordsForDeletion помечает запись на удаление.
 func (s *Store) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
 	for _, r := range records {
 		logger.Log.Info("record marked for deletion(plan)", zap.String("shortURL", r.ShortURL), zap.String("userID", r.UserID))

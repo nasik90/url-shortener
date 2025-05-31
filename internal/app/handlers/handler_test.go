@@ -4,17 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
 	"github.com/nasik90/url-shortener/internal/app/service"
 	"github.com/nasik90/url-shortener/internal/app/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetShortURL(t *testing.T) {
@@ -66,6 +69,24 @@ func TestGetShortURL(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.originalURLFromDB, originalURLFromDB)
 		})
+	}
+}
+
+func BenchmarkGetShortURL(b *testing.B) {
+	repo := storage.NewLocalCahce()
+	userID := "123"
+	for i := 0; i < b.N; i++ {
+		originalURL := "testBench" + strconv.Itoa(rand.Int()) + ".ru"
+		body := httptest.NewRecorder().Body
+		body.Write([]byte(originalURL))
+		request := httptest.NewRequest(http.MethodPost, "/", body).
+			WithContext(context.WithValue(context.Background(), middleware.UserIDContextKey{}, userID))
+		w := httptest.NewRecorder()
+
+		service := service.NewService(repo, request.Host)
+		handler := NewHandler(service)
+
+		handler.GetShortURL()(w, request)
 	}
 }
 
