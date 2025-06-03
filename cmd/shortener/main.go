@@ -97,4 +97,5 @@ func main() {
 
 	wg.Wait()
 	logger.Log.Info("closed gracefuly")
+
 }
