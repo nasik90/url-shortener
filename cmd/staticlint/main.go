@@ -4,8 +4,8 @@ package main
 import (
 	"go/ast"
 
-	//"github.com/kinbiko/errcheck"
-
+	"github.com/kisielk/errcheck/errcheck"
+	"github.com/timakin/bodyclose/passes/bodyclose"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -16,7 +16,7 @@ import (
 	"honnef.co/go/tools/staticcheck"
 )
 
-// Main - функция для запуска анализатора
+// Main - функция для запуска анализатора.
 func main() {
 	var mychecks []*analysis.Analyzer
 	for _, v := range staticcheck.Analyzers {
@@ -28,8 +28,8 @@ func main() {
 	mychecks = append(mychecks, shadow.Analyzer)
 	mychecks = append(mychecks, structtag.Analyzer)
 	mychecks = append(mychecks, noOsExitInMain)
-	//mychecks = append(mychecks, errcheck.Analyzer)
-	//mychecks = append(mychecks, gosec.Analyzer)
+	mychecks = append(mychecks, bodyclose.Analyzer)
+	mychecks = append(mychecks, errcheck.Analyzer)
 
 	multichecker.Main(
 		mychecks...,
