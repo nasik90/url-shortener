@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -22,7 +23,15 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/storage/pg"
 )
 
+var (
+	BuildVersion string
+	BuildDate    string
+	BuildCommit  string
+)
+
 func main() {
+
+	printFlags()
 
 	options := new(settings.Options)
 	settings.ParseFlags(options)
@@ -98,4 +107,24 @@ func main() {
 	wg.Wait()
 	logger.Log.Info("closed gracefuly")
 
+}
+
+func printFlags() {
+	if BuildVersion == "" {
+		fmt.Println("Build version: N/A")
+	} else {
+		fmt.Printf("Build version: %s\n", BuildVersion)
+	}
+
+	if BuildDate == "" {
+		fmt.Println("Build date: N/A")
+	} else {
+		fmt.Printf("Build date: %s\n", BuildDate)
+	}
+
+	if BuildCommit == "" {
+		fmt.Println("Build commit: N/A")
+	} else {
+		fmt.Printf("Build commit: %s\n", BuildCommit)
+	}
 }
