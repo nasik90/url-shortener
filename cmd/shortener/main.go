@@ -24,9 +24,9 @@ import (
 )
 
 var (
-	BuildVersion string
-	BuildDate    string
-	BuildCommit  string
+	buildVersion string
+	buildDate    string
+	buildCommit  string
 )
 
 func main() {
@@ -110,21 +110,21 @@ func main() {
 }
 
 func printFlags() {
-	if BuildVersion == "" {
+	if buildVersion == "" {
 		fmt.Println("Build version: N/A")
 	} else {
-		fmt.Printf("Build version: %s\n", BuildVersion)
+		fmt.Printf("Build version: %s\n", buildVersion)
 	}
 
-	if BuildDate == "" {
+	if buildDate == "" {
 		fmt.Println("Build date: N/A")
 	} else {
-		fmt.Printf("Build date: %s\n", BuildDate)
+		fmt.Printf("Build date: %s\n", buildDate)
 	}
 
-	if BuildCommit == "" {
+	if buildCommit == "" {
 		fmt.Println("Build commit: N/A")
 	} else {
-		fmt.Printf("Build commit: %s\n", BuildCommit)
+		fmt.Printf("Build commit: %s\n", buildCommit)
 	}
 }
