@@ -45,7 +45,8 @@ func (s *Server) RunServer() error {
 		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
 	})
 	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
-	err := s.ListenAndServe()
+	//err := s.ListenAndServe()
+	err := s.ListenAndServeTLS("server.crt", "server.key")
 	if err != nil {
 		return err
 	}

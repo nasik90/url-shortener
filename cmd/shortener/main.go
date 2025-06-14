@@ -23,6 +23,12 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/storage/pg"
 )
 
+// type BuildInfo struct {
+// 	Version string
+// 	Date    string
+// 	Commit  string
+// }
+
 var (
 	buildVersion string
 	buildDate    string
@@ -30,6 +36,12 @@ var (
 )
 
 func main() {
+
+	// var buildInfo = BuildInfo{
+	// 	Version: buildVersion,
+	// 	Date:    buildDate,
+	// 	Commit:  buildCommit,
+	// }
 
 	printFlags()
 
@@ -110,21 +122,18 @@ func main() {
 }
 
 func printFlags() {
-	if buildVersion == "" {
-		fmt.Println("Build version: N/A")
-	} else {
-		fmt.Printf("Build version: %s\n", buildVersion)
-	}
 
-	if buildDate == "" {
-		fmt.Println("Build date: N/A")
-	} else {
-		fmt.Printf("Build date: %s\n", buildDate)
-	}
+	buildInfoMap := make(map[string]string)
+	buildInfoMap["Build version"] = buildVersion
+	buildInfoMap["Build date"] = buildDate
+	buildInfoMap["Build commit"] = buildCommit
 
-	if buildCommit == "" {
-		fmt.Println("Build commit: N/A")
-	} else {
-		fmt.Printf("Build commit: %s\n", buildCommit)
+	for key, value := range buildInfoMap {
+		if value == "" {
+			fmt.Printf("%s: N/A", key)
+		} else {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+
 	}
 }

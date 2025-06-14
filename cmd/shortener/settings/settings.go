@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"os"
+	"strconv"
 )
 
 // Настройки короткого URL.
@@ -34,6 +35,7 @@ type Options struct {
 	DatabaseDSN        string
 	EnablePprofServ    bool
 	PprofServerAddress string
+	EnableHTTPS        bool
 }
 
 // Record - структура для хранения короткого URL - UserID.
@@ -49,10 +51,11 @@ func ParseFlags(o *Options) {
 	flag.StringVar(&o.BaseURL, "b", "http://localhost:8080", "base address for short URL")
 	flag.StringVar(&o.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&o.FilePath, "f", "URLStorage.txt", "file storage path")
-	//flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
+	flag.StringVar(&o.DatabaseDSN, "d", "host=localhost user=postgres password=xxxx dbname=URLShortener sslmode=disable", "database connection string")
 	flag.StringVar(&o.DatabaseDSN, "d", "", "database connection string")
 	flag.BoolVar(&o.EnablePprofServ, "p", true, "enable pprof server")
 	flag.StringVar(&o.PprofServerAddress, "pa", ":8181", "address and port to run pprof server")
+	flag.BoolVar(&o.EnableHTTPS, "s", false, "enable HTPPS connection")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
@@ -69,5 +72,12 @@ func ParseFlags(o *Options) {
 	}
 	if databaseDSN := os.Getenv("DATABASE_DSN"); databaseDSN != "" {
 		o.DatabaseDSN = databaseDSN
+	}
+	if enableHTTPS := os.Getenv("ENABLE_HTTPS"); enableHTTPS != "" {
+		val, err := strconv.ParseBool(enableHTTPS)
+		if err != nil {
+			panic("error parsing env var ENABLE_HTTPS: " + err.Error())
+		}
+		o.EnableHTTPS = val
 	}
 }
