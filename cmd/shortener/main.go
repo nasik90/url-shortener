@@ -87,7 +87,7 @@ func main() {
 
 	service := service.NewService(repo, options.BaseURL)
 	handler := handler.NewHandler(service)
-	server := server.NewServer(handler, options.ServerAddress)
+	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
