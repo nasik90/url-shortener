@@ -49,8 +49,8 @@ type Record struct {
 // ParseFlags - парсит флаги командной строки или переменные окружения.
 // Результат сохраняет в структуру Options.
 func ParseFlags(o *Options) {
-	// flag.StringVar(&o.Config, "c", "C:/golang_projects/go_sprint1/url-shortener/cmd/shortener/config.json", "config path")
-	flag.StringVar(&o.Config, "c", "config.json", "config path")
+	//flag.StringVar(&o.Config, "c", "config.json", "config path")
+	flag.StringVar(&o.Config, "c", "", "config path")
 	if config := os.Getenv("CONFIG"); config != "" {
 		o.Config = config
 	}
