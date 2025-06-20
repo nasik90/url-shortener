@@ -22,5 +22,10 @@ vendor/
 .idea
 .vscode
 
-# file storage files
+# File storage files
 URLStorage.txt
+
+# Certs
+*.key
+*.crt
+*.pem
