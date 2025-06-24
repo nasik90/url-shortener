@@ -61,6 +61,6 @@ func (s *Server) RunServer() error {
 }
 
 // RunServer останавливает сервер.
-func (s *Server) StopServer() error {
-	return s.Shutdown(context.Background())
+func (s *Server) StopServer(ctx context.Context) error {
+	return s.Shutdown(ctx)
 }

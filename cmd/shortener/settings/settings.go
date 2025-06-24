@@ -66,40 +66,8 @@ func ParseFlags(o *Options) {
 
 	fillDefaultOptions(o)
 	overrideOptionsFromConfig(o, &config)
-
-	flag.StringVar(&o.ServerAddress, "a", o.ServerAddress, "address and port to run server")
-	flag.StringVar(&o.BaseURL, "b", o.BaseURL, "base address for short URL")
-	flag.StringVar(&o.LogLevel, "l", o.LogLevel, "log level")
-	flag.StringVar(&o.FilePath, "f", o.FilePath, "file storage path")
-	//flag.StringVar(&o.DatabaseDSN, "d", o.DatabaseDSN, "database connection string")
-	flag.StringVar(&o.DatabaseDSN, "d", o.DatabaseDSN, "database connection string")
-	flag.BoolVar(&o.EnablePprofServ, "p", o.EnablePprofServ, "enable pprof server")
-	flag.StringVar(&o.PprofServerAddress, "pa", o.PprofServerAddress, "address and port to run pprof server")
-	flag.BoolVar(&o.EnableHTTPS, "s", o.EnableHTTPS, "enable HTPPS connection")
-	flag.Parse()
-
-	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
-		o.ServerAddress = serverAddress
-	}
-	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
-		o.BaseURL = baseURL
-	}
-	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
-		o.LogLevel = envLogLevel
-	}
-	if filePath := os.Getenv("FILE_STORAGE_PATH"); filePath != "" {
-		o.FilePath = filePath
-	}
-	if databaseDSN := os.Getenv("DATABASE_DSN"); databaseDSN != "" {
-		o.DatabaseDSN = databaseDSN
-	}
-	if enableHTTPS := os.Getenv("ENABLE_HTTPS"); enableHTTPS != "" {
-		val, err := strconv.ParseBool(enableHTTPS)
-		if err != nil {
-			panic("error parsing env var ENABLE_HTTPS: " + err.Error())
-		}
-		o.EnableHTTPS = val
-	}
+	overrideOptionsFromCmd(o)
+	overrideOptionsFromEnv(o)
 
 }
 
@@ -154,4 +122,43 @@ func readConfig(fname string) (Options, error) {
 	err = json.Unmarshal(data, &config)
 	return config, err
 
+}
+
+func overrideOptionsFromCmd(o *Options) {
+	flag.StringVar(&o.ServerAddress, "a", o.ServerAddress, "address and port to run server")
+	flag.StringVar(&o.BaseURL, "b", o.BaseURL, "base address for short URL")
+	flag.StringVar(&o.LogLevel, "l", o.LogLevel, "log level")
+	flag.StringVar(&o.FilePath, "f", o.FilePath, "file storage path")
+	//flag.StringVar(&o.DatabaseDSN, "d", o.DatabaseDSN, "database connection string")
+	flag.StringVar(&o.DatabaseDSN, "d", o.DatabaseDSN, "database connection string")
+	flag.BoolVar(&o.EnablePprofServ, "p", o.EnablePprofServ, "enable pprof server")
+	flag.StringVar(&o.PprofServerAddress, "pa", o.PprofServerAddress, "address and port to run pprof server")
+	flag.BoolVar(&o.EnableHTTPS, "s", o.EnableHTTPS, "enable HTPPS connection")
+	flag.Parse()
+}
+
+func overrideOptionsFromEnv(o *Options) {
+
+	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
+		o.ServerAddress = serverAddress
+	}
+	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
+		o.BaseURL = baseURL
+	}
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		o.LogLevel = envLogLevel
+	}
+	if filePath := os.Getenv("FILE_STORAGE_PATH"); filePath != "" {
+		o.FilePath = filePath
+	}
+	if databaseDSN := os.Getenv("DATABASE_DSN"); databaseDSN != "" {
+		o.DatabaseDSN = databaseDSN
+	}
+	if enableHTTPS := os.Getenv("ENABLE_HTTPS"); enableHTTPS != "" {
+		val, err := strconv.ParseBool(enableHTTPS)
+		if err != nil {
+			panic("error parsing env var ENABLE_HTTPS: " + err.Error())
+		}
+		o.EnableHTTPS = val
+	}
 }

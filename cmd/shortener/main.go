@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -90,14 +92,16 @@ func main() {
 	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-sigs
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
 		logger.Log.Info("closing the server")
-		if err := server.StopServer(); err != nil {
+		if err := server.StopServer(ctx); err != nil {
 			logger.Log.Error("stop http server", zap.String("error", err.Error()))
 		}
 		logger.Log.Info("closing the storage")
