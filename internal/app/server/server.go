@@ -18,14 +18,16 @@ import (
 // Содержит встроенную структуру из типовой библиотеки http.Server и handler.
 type Server struct {
 	http.Server
-	handler *handler.Handler
+	handler     *handler.Handler
+	enableHTTPS bool
 }
 
 // NewServer создает экземпляр структуры Server.
-func NewServer(handler *handler.Handler, serverAddress string) *Server {
+func NewServer(handler *handler.Handler, serverAddress string, enableHTTPS bool) *Server {
 	s := &Server{}
 	s.Addr = serverAddress
 	s.handler = handler
+	s.enableHTTPS = enableHTTPS
 	return s
 }
 
@@ -45,7 +47,12 @@ func (s *Server) RunServer() error {
 		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
 	})
 	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
-	err := s.ListenAndServe()
+	var err error
+	if s.enableHTTPS {
+		err = s.ListenAndServeTLS("server.crt", "server.key")
+	} else {
+		err = s.ListenAndServe()
+	}
 	if err != nil {
 		return err
 	}
@@ -54,6 +61,6 @@ func (s *Server) RunServer() error {
 }
 
 // RunServer останавливает сервер.
-func (s *Server) StopServer() error {
-	return s.Shutdown(context.Background())
+func (s *Server) StopServer(ctx context.Context) error {
+	return s.Shutdown(ctx)
 }
