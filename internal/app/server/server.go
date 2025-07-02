@@ -45,6 +45,7 @@ func (s *Server) RunServer() error {
 		r.Get("/ping", s.handler.Ping())
 		r.Get("/api/user/urls", s.handler.GetUserURLs())
 		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
+		r.Get("/api/internal/stats", s.handler.GetURLsStats())
 	})
 	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
 	var err error
