@@ -25,12 +25,6 @@ import (
 	"github.com/nasik90/url-shortener/internal/app/storage/pg"
 )
 
-// type BuildInfo struct {
-// 	Version string
-// 	Date    string
-// 	Commit  string
-// }
-
 var (
 	buildVersion string
 	buildDate    string
@@ -38,12 +32,6 @@ var (
 )
 
 func main() {
-
-	// var buildInfo = BuildInfo{
-	// 	Version: buildVersion,
-	// 	Date:    buildDate,
-	// 	Commit:  buildCommit,
-	// }
 
 	printFlags()
 
@@ -88,7 +76,7 @@ func main() {
 	}
 
 	service := service.NewService(repo, options.BaseURL)
-	handler := handler.NewHandler(service)
+	handler := handler.NewHandler(service, options.TrustedSubnet)
 	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
 
 	sigs := make(chan os.Signal, 1)

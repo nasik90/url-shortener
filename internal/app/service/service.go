@@ -20,6 +20,8 @@ type Repository interface {
 	GetShortURL(ctx context.Context, originalURL string) (string, error)
 	GetUserURLs(ctx context.Context, userID string) (map[string]string, error)
 	MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error
+	GetURLsCount(ctx context.Context) (int, error)
+	GetUsersCount(ctx context.Context) (int, error)
 }
 
 // Service - структура, которая хранит ссылку на репозиторий, адрес хоста и канал для хранения URL`ов к удалению.
@@ -145,4 +147,18 @@ func (s *Service) MarkRecordsForDeletion(ctx context.Context, shortURLs []string
 // Ping - пингует БД.
 func (s *Service) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
+}
+
+// GetURLsStats подсчитывает количество коротких урлов и пользователей в сервисе.
+// Возвращает число коротких урлов и число пользователей.
+func (s *Service) GetURLsStats(ctx context.Context) (urls, users int, err error) {
+	URLsCount, err := s.repo.GetURLsCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	UsersCount, err := s.repo.GetUsersCount(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	return URLsCount, UsersCount, nil
 }

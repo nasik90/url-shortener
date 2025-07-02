@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 
@@ -22,16 +23,18 @@ type Service interface {
 	GetUserURLs(ctx context.Context, userID string) (map[string]string, error)
 	MarkRecordsForDeletion(ctx context.Context, shortURLs []string, userID string)
 	Ping(ctx context.Context) error
+	GetURLsStats(ctx context.Context) (int, int, error)
 }
 
 // Handler - структура, хранящая объект типа Service.
 type Handler struct {
-	service Service
+	service       Service
+	trustedSubnet string
 }
 
 // NewHandler создает экземпляр объекта Handler.
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, trustedSubnet string) *Handler {
+	return &Handler{service: service, trustedSubnet: trustedSubnet}
 }
 
 // GetShortURL - метод для получения короткого URL по переданному оригинальному URL.
@@ -239,4 +242,65 @@ func (h *Handler) MarkRecordsForDeletion() http.HandlerFunc {
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusAccepted)
 	}
+}
+
+// GetUserURLs - возвращает количество URL и пользователей.
+// В настройках сервисе обязательно должен быть указан CIDR и передан в заголовке X-Real-IP IP адрес.
+func (h *Handler) GetURLsStats() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		err := h.checkForTrustedNet(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusForbidden)
+			return
+		}
+		ctx := req.Context()
+		urls, users, err := h.service.GetURLsStats(ctx)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		type outputType struct {
+			Urls  int `json:"urls"`
+			Users int `json:"users"`
+		}
+		output := outputType{Urls: urls, Users: users}
+		result, err := json.Marshal(output)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		status := http.StatusOK
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(status)
+		res.Write(result)
+	}
+}
+
+func (h *Handler) checkForTrustedNet(req *http.Request) error {
+
+	if h.trustedSubnet == "" {
+		return errors.New("trusted subnet is empty, access forbidden")
+	}
+
+	_, trustedNet, err := net.ParseCIDR(h.trustedSubnet)
+	if err != nil {
+		return err
+	}
+
+	ipStr := req.Header.Get("X-Real-IP")
+	if ipStr == "" {
+		return errors.New("forbidden - missing X-Real-IP header")
+	}
+
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return errors.New("forbidden - invalid IP")
+	}
+
+	if !trustedNet.Contains(ip) {
+		return errors.New("forbidden - IP not in trusted subnet")
+	}
+
+	return nil
+
 }
