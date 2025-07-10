@@ -38,7 +38,7 @@ func NewHandler(service Service, trustedSubnet string) *Handler {
 }
 
 // GetShortURL - метод для получения короткого URL по переданному оригинальному URL.
-// Оригинальнаый URL передается в теле запроса.
+// Оригинальный URL передается в теле запроса.
 func (h *Handler) GetShortURL() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf bytes.Buffer
@@ -90,7 +90,7 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 }
 
 // GetShortURLJSON - метод для получения короткого URL по переданному оригинальному URL.
-// Оригинальнаый URL передается в теле запроса в JSON.
+// Оригинальный URL передается в теле запроса в JSON.
 func (h *Handler) GetShortURLJSON() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -245,7 +245,7 @@ func (h *Handler) MarkRecordsForDeletion() http.HandlerFunc {
 }
 
 // GetUserURLs - возвращает количество URL и пользователей.
-// В настройках сервисе обязательно должен быть указан CIDR и передан в заголовке X-Real-IP IP адрес.
+// В настройках сервиса обязательно должен быть указан CIDR и передан в заголовке X-Real-IP IP адрес.
 func (h *Handler) GetURLsStats() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		err := h.checkForTrustedNet(req)

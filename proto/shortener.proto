@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "internal/app/grpcapi";
+
+message GetShortURLRequest{
+    string originalURL = 1;    
+}
+
+message GetShortURLResponse{
+    string shortURL = 1;    
+}
+
+message GetOriginalURLRequest{
+    string shortURL = 1;    
+}
+
+message GetOriginalURLResponse{
+    string originalURL = 1;    
+}
+
+message OriginalURLWithId{
+    string originalURL = 1;
+    string correlationID = 2;
+}
+
+message GetShortURLsRequest{
+    repeated OriginalURLWithId originalURLs = 1;    
+}
+
+message ShortURLWithId{
+    string shortURL = 1;
+    string correlationID = 2;
+}
+
+message GetShortURLsResponse{
+    repeated ShortURLWithId shortURLs = 1;    
+}
+
+message GetUserURLsRequest{
+}
+
+message ShortOriginalURL{
+    string ShortURL = 1;
+    string OriginalURL = 2;
+}
+
+message GetUserURLsResponse{
+    repeated ShortOriginalURL shortOriginalURLs = 1;
+}
+
+message MarkRecordsForDeletionRequest{
+    repeated string shortURLs = 1;
+}
+
+message MarkRecordsForDeletionResponse{
+}
+
+message PingRequest{}
+
+message PingResponse{}
+
+message GetURLsStatsRequest{}
+
+message GetURLsStatsResponse{
+    int64 urls = 1;
+    int64 users = 2;
+}
+
+service Shortener{
+    rpc GetShortURL(GetShortURLRequest) returns (GetShortURLResponse); 
+    rpc GetOriginalURL(GetOriginalURLRequest) returns (GetOriginalURLResponse); 
+    rpc GetShortURLs(GetShortURLsRequest) returns (GetShortURLsResponse);
+    rpc GetUserURLs(GetUserURLsRequest) returns (GetUserURLsResponse);
+    rpc MarkRecordsForDeletion(MarkRecordsForDeletionRequest) returns (MarkRecordsForDeletionResponse);
+    rpc Ping(PingRequest) returns (PingResponse);
+    rpc GetURLsStats(GetURLsStatsRequest) returns (GetURLsStatsResponse);
+} 

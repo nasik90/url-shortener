@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
+	grpsServer "github.com/nasik90/url-shortener/internal/app/grpcServer"
+	"github.com/nasik90/url-shortener/internal/app/grpcapi"
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	"github.com/nasik90/url-shortener/internal/app/server"
@@ -77,36 +79,53 @@ func main() {
 
 	service := service.NewService(repo, options.BaseURL)
 	handler := handler.NewHandler(service, options.TrustedSubnet)
+	shortenerServer := grpcapi.NewShortenerServer(service)
 	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
+	grpcServer := grpsServer.NewGRPCServer(shortenerServer, ":3200", options.TrustedSubnet)
+
+	go service.HandleRecords()
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = server.RunServer()
+		if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				logger.Log.Fatal("run server", zap.String("error", err.Error()))
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err = grpcServer.RunServer(); err != nil {
+			logger.Log.Fatal("run grpc server", zap.String("error", err.Error()))
+		}
+	}()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-sigs
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		logger.Log.Info("closing the server")
+		logger.Log.Info("closing http server")
 		if err := server.StopServer(ctx); err != nil {
 			logger.Log.Error("stop http server", zap.String("error", err.Error()))
 		}
+		logger.Log.Info("closing grpc server")
+		grpcServer.StopServer()
 		logger.Log.Info("closing the storage")
 		if err := repo.Close(); err != nil {
 			logger.Log.Error("close storage", zap.String("error", err.Error()))
 		}
 		logger.Log.Info("ready to exit")
 	}()
-
-	go service.HandleRecords()
-
-	err = server.RunServer()
-	if err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Log.Fatal("run server", zap.String("error", err.Error()))
-		}
-	}
 
 	wg.Wait()
 	logger.Log.Info("closed gracefuly")

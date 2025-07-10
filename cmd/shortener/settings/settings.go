@@ -82,6 +82,7 @@ func fillDefaultOptions(o *Options) {
 	o.EnablePprofServ = true
 	o.PprofServerAddress = ":8181"
 	o.EnableHTTPS = false
+	o.TrustedSubnet = "192.168.0.1/24"
 }
 
 func overrideOptionsFromConfig(o *Options, c *Options) {
@@ -105,7 +106,9 @@ func overrideOptionsFromConfig(o *Options, c *Options) {
 		o.PprofServerAddress = c.PprofServerAddress
 	}
 	o.EnableHTTPS = c.EnableHTTPS
-	o.TrustedSubnet = c.TrustedSubnet
+	if c.TrustedSubnet != "" {
+		o.TrustedSubnet = c.TrustedSubnet
+	}
 }
 
 func readConfig(fname string) (Options, error) {
