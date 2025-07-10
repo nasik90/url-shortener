@@ -52,7 +52,7 @@ func TestGetShortURL(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			service := service.NewService(repo, request.Host)
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 
 			handler.GetShortURL()(w, request)
 
@@ -84,7 +84,7 @@ func BenchmarkGetShortURL(b *testing.B) {
 		w := httptest.NewRecorder()
 
 		service := service.NewService(repo, request.Host)
-		handler := NewHandler(service)
+		handler := NewHandler(service, "")
 
 		handler.GetShortURL()(w, request)
 	}
@@ -134,7 +134,7 @@ func TestGetOriginalURL(t *testing.T) {
 				WithContext(context.WithValue(context.Background(), middleware.UserIDContextKey{}, tt.userID))
 			w := httptest.NewRecorder()
 			service := service.NewService(repo, request.Host)
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 			handler.GetOriginalURL()(w, request)
 
 			res := w.Result()
@@ -188,7 +188,7 @@ func TestGetShortURLJSON(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			service := service.NewService(repo, request.Host)
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 			handler.GetShortURLJSON()(w, request)
 
 			res := w.Result()
@@ -250,7 +250,7 @@ func TestMarkRecordsForDeletion(t *testing.T) {
 			w := httptest.NewRecorder()
 			service := service.NewService(repo, request.Host)
 			go service.HandleRecords()
-			handler := NewHandler(service)
+			handler := NewHandler(service, "")
 			handler.MarkRecordsForDeletion()(w, request)
 
 			res := w.Result()

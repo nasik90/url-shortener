@@ -237,3 +237,39 @@ func (s *Store) MarkRecordsForDeletion(ctx context.Context, records ...settings.
 	logger.Log.Info("record marked for deletion(fact)", zap.String("rowsAffected", strconv.Itoa(int(rowsAffected))))
 	return err
 }
+
+// GetURLsCount подсчитывает количество коротких урлов в базе.
+// Возвращает число коротких урлов в базе.
+func (s *Store) GetURLsCount(ctx context.Context) (int, error) {
+
+	row := s.conn.QueryRowContext(ctx, `
+	SELECT
+		count(*)
+	FROM urlstorage`)
+
+	var URLsCount int
+	err := row.Scan(&URLsCount)
+	if err != nil {
+		return 0, err
+	}
+	return URLsCount, nil
+
+}
+
+// GetUsersCount подсчитывает количество пользователей в базе.
+// Возвращает число пользователей в базе.
+func (s *Store) GetUsersCount(ctx context.Context) (int, error) {
+
+	row := s.conn.QueryRowContext(ctx, `
+	SELECT
+		count(DISTINCT user_id)
+	FROM urlstorage`)
+
+	var UsersCount int
+	err := row.Scan(&UsersCount)
+	if err != nil {
+		return 0, err
+	}
+	return UsersCount, nil
+
+}

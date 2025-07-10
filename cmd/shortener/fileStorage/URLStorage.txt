@@ -1,0 +1,3 @@
+{"uuid":"1","short_url":"wtobYQeC","original_url":"https://infostart.ru"}
+{"uuid":"2","short_url":"Tf5Tw0wy","original_url":"https://infostart.ru"}
+{"uuid":"3","short_url":"DPI2YLHV","original_url":"https://infostart.ru"}
