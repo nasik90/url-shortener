@@ -20,22 +20,22 @@ message GetOriginalURLResponse{
     string originalURL = 1;    
 }
 
-message OriginalURLWithId{
+message OriginalURLWithID{
     string originalURL = 1;
     string correlationID = 2;
 }
 
 message GetShortURLsRequest{
-    repeated OriginalURLWithId originalURLs = 1;    
+    repeated OriginalURLWithID originalURLs = 1;    
 }
 
-message ShortURLWithId{
+message ShortURLWithID{
     string shortURL = 1;
     string correlationID = 2;
 }
 
 message GetShortURLsResponse{
-    repeated ShortURLWithId shortURLs = 1;    
+    repeated ShortURLWithID shortURLs = 1;    
 }
 
 message GetUserURLsRequest{

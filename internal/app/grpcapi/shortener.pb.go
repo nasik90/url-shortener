@@ -197,7 +197,7 @@ func (x *GetOriginalURLResponse) GetOriginalURL() string {
 	return ""
 }
 
-type OriginalURLWithId struct {
+type OriginalURLWithID struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OriginalURL   string                 `protobuf:"bytes,1,opt,name=originalURL,proto3" json:"originalURL,omitempty"`
 	CorrelationID string                 `protobuf:"bytes,2,opt,name=correlationID,proto3" json:"correlationID,omitempty"`
@@ -205,20 +205,20 @@ type OriginalURLWithId struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *OriginalURLWithId) Reset() {
-	*x = OriginalURLWithId{}
+func (x *OriginalURLWithID) Reset() {
+	*x = OriginalURLWithID{}
 	mi := &file_proto_shortener_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OriginalURLWithId) String() string {
+func (x *OriginalURLWithID) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OriginalURLWithId) ProtoMessage() {}
+func (*OriginalURLWithID) ProtoMessage() {}
 
-func (x *OriginalURLWithId) ProtoReflect() protoreflect.Message {
+func (x *OriginalURLWithID) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_shortener_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -230,19 +230,19 @@ func (x *OriginalURLWithId) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OriginalURLWithId.ProtoReflect.Descriptor instead.
-func (*OriginalURLWithId) Descriptor() ([]byte, []int) {
+// Deprecated: Use OriginalURLWithID.ProtoReflect.Descriptor instead.
+func (*OriginalURLWithID) Descriptor() ([]byte, []int) {
 	return file_proto_shortener_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *OriginalURLWithId) GetOriginalURL() string {
+func (x *OriginalURLWithID) GetOriginalURL() string {
 	if x != nil {
 		return x.OriginalURL
 	}
 	return ""
 }
 
-func (x *OriginalURLWithId) GetCorrelationID() string {
+func (x *OriginalURLWithID) GetCorrelationID() string {
 	if x != nil {
 		return x.CorrelationID
 	}
@@ -251,7 +251,7 @@ func (x *OriginalURLWithId) GetCorrelationID() string {
 
 type GetShortURLsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OriginalURLs  []*OriginalURLWithId   `protobuf:"bytes,1,rep,name=originalURLs,proto3" json:"originalURLs,omitempty"`
+	OriginalURLs  []*OriginalURLWithID   `protobuf:"bytes,1,rep,name=originalURLs,proto3" json:"originalURLs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -286,14 +286,14 @@ func (*GetShortURLsRequest) Descriptor() ([]byte, []int) {
 	return file_proto_shortener_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetShortURLsRequest) GetOriginalURLs() []*OriginalURLWithId {
+func (x *GetShortURLsRequest) GetOriginalURLs() []*OriginalURLWithID {
 	if x != nil {
 		return x.OriginalURLs
 	}
 	return nil
 }
 
-type ShortURLWithId struct {
+type ShortURLWithID struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ShortURL      string                 `protobuf:"bytes,1,opt,name=shortURL,proto3" json:"shortURL,omitempty"`
 	CorrelationID string                 `protobuf:"bytes,2,opt,name=correlationID,proto3" json:"correlationID,omitempty"`
@@ -301,20 +301,20 @@ type ShortURLWithId struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ShortURLWithId) Reset() {
-	*x = ShortURLWithId{}
+func (x *ShortURLWithID) Reset() {
+	*x = ShortURLWithID{}
 	mi := &file_proto_shortener_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ShortURLWithId) String() string {
+func (x *ShortURLWithID) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ShortURLWithId) ProtoMessage() {}
+func (*ShortURLWithID) ProtoMessage() {}
 
-func (x *ShortURLWithId) ProtoReflect() protoreflect.Message {
+func (x *ShortURLWithID) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_shortener_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -326,19 +326,19 @@ func (x *ShortURLWithId) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ShortURLWithId.ProtoReflect.Descriptor instead.
-func (*ShortURLWithId) Descriptor() ([]byte, []int) {
+// Deprecated: Use ShortURLWithID.ProtoReflect.Descriptor instead.
+func (*ShortURLWithID) Descriptor() ([]byte, []int) {
 	return file_proto_shortener_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ShortURLWithId) GetShortURL() string {
+func (x *ShortURLWithID) GetShortURL() string {
 	if x != nil {
 		return x.ShortURL
 	}
 	return ""
 }
 
-func (x *ShortURLWithId) GetCorrelationID() string {
+func (x *ShortURLWithID) GetCorrelationID() string {
 	if x != nil {
 		return x.CorrelationID
 	}
@@ -347,7 +347,7 @@ func (x *ShortURLWithId) GetCorrelationID() string {
 
 type GetShortURLsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ShortURLs     []*ShortURLWithId      `protobuf:"bytes,1,rep,name=shortURLs,proto3" json:"shortURLs,omitempty"`
+	ShortURLs     []*ShortURLWithID      `protobuf:"bytes,1,rep,name=shortURLs,proto3" json:"shortURLs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -382,7 +382,7 @@ func (*GetShortURLsResponse) Descriptor() ([]byte, []int) {
 	return file_proto_shortener_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetShortURLsResponse) GetShortURLs() []*ShortURLWithId {
+func (x *GetShortURLsResponse) GetShortURLs() []*ShortURLWithID {
 	if x != nil {
 		return x.ShortURLs
 	}
@@ -774,16 +774,16 @@ const file_proto_shortener_proto_rawDesc = "" +
 	"\bshortURL\x18\x01 \x01(\tR\bshortURL\":\n" +
 	"\x16GetOriginalURLResponse\x12 \n" +
 	"\voriginalURL\x18\x01 \x01(\tR\voriginalURL\"[\n" +
-	"\x11OriginalURLWithId\x12 \n" +
+	"\x11OriginalURLWithID\x12 \n" +
 	"\voriginalURL\x18\x01 \x01(\tR\voriginalURL\x12$\n" +
 	"\rcorrelationID\x18\x02 \x01(\tR\rcorrelationID\"W\n" +
 	"\x13GetShortURLsRequest\x12@\n" +
-	"\foriginalURLs\x18\x01 \x03(\v2\x1c.shortener.OriginalURLWithIdR\foriginalURLs\"R\n" +
-	"\x0eShortURLWithId\x12\x1a\n" +
+	"\foriginalURLs\x18\x01 \x03(\v2\x1c.shortener.OriginalURLWithIDR\foriginalURLs\"R\n" +
+	"\x0eShortURLWithID\x12\x1a\n" +
 	"\bshortURL\x18\x01 \x01(\tR\bshortURL\x12$\n" +
 	"\rcorrelationID\x18\x02 \x01(\tR\rcorrelationID\"O\n" +
 	"\x14GetShortURLsResponse\x127\n" +
-	"\tshortURLs\x18\x01 \x03(\v2\x19.shortener.ShortURLWithIdR\tshortURLs\"\x14\n" +
+	"\tshortURLs\x18\x01 \x03(\v2\x19.shortener.ShortURLWithIDR\tshortURLs\"\x14\n" +
 	"\x12GetUserURLsRequest\"P\n" +
 	"\x10ShortOriginalURL\x12\x1a\n" +
 	"\bShortURL\x18\x01 \x01(\tR\bShortURL\x12 \n" +
@@ -826,9 +826,9 @@ var file_proto_shortener_proto_goTypes = []any{
 	(*GetShortURLResponse)(nil),            // 1: shortener.GetShortURLResponse
 	(*GetOriginalURLRequest)(nil),          // 2: shortener.GetOriginalURLRequest
 	(*GetOriginalURLResponse)(nil),         // 3: shortener.GetOriginalURLResponse
-	(*OriginalURLWithId)(nil),              // 4: shortener.OriginalURLWithId
+	(*OriginalURLWithID)(nil),              // 4: shortener.OriginalURLWithID
 	(*GetShortURLsRequest)(nil),            // 5: shortener.GetShortURLsRequest
-	(*ShortURLWithId)(nil),                 // 6: shortener.ShortURLWithId
+	(*ShortURLWithID)(nil),                 // 6: shortener.ShortURLWithID
 	(*GetShortURLsResponse)(nil),           // 7: shortener.GetShortURLsResponse
 	(*GetUserURLsRequest)(nil),             // 8: shortener.GetUserURLsRequest
 	(*ShortOriginalURL)(nil),               // 9: shortener.ShortOriginalURL
@@ -841,8 +841,8 @@ var file_proto_shortener_proto_goTypes = []any{
 	(*GetURLsStatsResponse)(nil),           // 16: shortener.GetURLsStatsResponse
 }
 var file_proto_shortener_proto_depIdxs = []int32{
-	4,  // 0: shortener.GetShortURLsRequest.originalURLs:type_name -> shortener.OriginalURLWithId
-	6,  // 1: shortener.GetShortURLsResponse.shortURLs:type_name -> shortener.ShortURLWithId
+	4,  // 0: shortener.GetShortURLsRequest.originalURLs:type_name -> shortener.OriginalURLWithID
+	6,  // 1: shortener.GetShortURLsResponse.shortURLs:type_name -> shortener.ShortURLWithID
 	9,  // 2: shortener.GetUserURLsResponse.shortOriginalURLs:type_name -> shortener.ShortOriginalURL
 	0,  // 3: shortener.Shortener.GetShortURL:input_type -> shortener.GetShortURLRequest
 	2,  // 4: shortener.Shortener.GetOriginalURL:input_type -> shortener.GetOriginalURLRequest

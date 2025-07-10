@@ -1,4 +1,4 @@
-package grpsServer
+package grpcserver
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/nasik90/url-shortener/internal/app/grpcapi"
 	pb "github.com/nasik90/url-shortener/internal/app/grpcapi"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	middleware "github.com/nasik90/url-shortener/internal/app/middlewares"
@@ -24,11 +23,11 @@ var (
 
 type GRPCServer struct {
 	gServer         *grpc.Server
-	shortenerServer *grpcapi.ShortenerServerStruct
+	shortenerServer *pb.ShortenerServerStruct
 	serverAddress   string
 }
 
-func NewGRPCServer(shortenerServer *grpcapi.ShortenerServerStruct, serverAddress string, trustedSubnet string) *GRPCServer {
+func NewGRPCServer(shortenerServer *pb.ShortenerServerStruct, serverAddress string, trustedSubnet string) *GRPCServer {
 	s := &GRPCServer{}
 	s.gServer = grpc.NewServer(grpc.ChainUnaryInterceptor(loggingInterceptor, userIDUnaryInterceptor, trustedNetInterceptor(trustedSubnet)))
 	s.shortenerServer = shortenerServer

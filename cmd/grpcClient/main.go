@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// устанавливаем соединение с сервером
-	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -46,12 +46,12 @@ func getShortURL(ctx context.Context, c pb.ShortenerClient) {
 }
 
 func getShortURLs(ctx context.Context, c pb.ShortenerClient) {
-	var originalURLWithId pb.OriginalURLWithId
-	originalURLWithId.OriginalURL = "getShortURLs.ru"
-	originalURLWithId.CorrelationID = "1"
+	var originalURLWithID pb.OriginalURLWithID
+	originalURLWithID.OriginalURL = "getShortURLs.ru"
+	originalURLWithID.CorrelationID = "1"
 
 	var req pb.GetShortURLsRequest
-	req.OriginalURLs = append(req.OriginalURLs, &originalURLWithId)
+	req.OriginalURLs = append(req.OriginalURLs, &originalURLWithID)
 	resp, err := c.GetShortURLs(ctx, &req)
 	if err != nil {
 		fmt.Println(err)

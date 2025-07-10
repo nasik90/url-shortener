@@ -66,10 +66,10 @@ func (s *ShortenerServerStruct) GetShortURLs(ctx context.Context, req *GetShortU
 		return &response, err
 	}
 	for corID, shortURL := range shortURLs {
-		var shortURLWithId ShortURLWithId
-		shortURLWithId.ShortURL = shortURL
-		shortURLWithId.CorrelationID = corID
-		response.ShortURLs = append(response.ShortURLs, &shortURLWithId)
+		var shortURLWithID ShortURLWithID
+		shortURLWithID.ShortURL = shortURL
+		shortURLWithID.CorrelationID = corID
+		response.ShortURLs = append(response.ShortURLs, &shortURLWithID)
 	}
 	return &response, err
 }
