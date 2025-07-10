@@ -18,12 +18,9 @@ func main() {
 		fmt.Println(err)
 	}
 	defer conn.Close()
-	// получаем переменную интерфейсного типа UsersClient,
-	// через которую будем отправлять сообщения
 	c := pb.NewShortenerClient(conn)
 
 	md := metadata.Pairs("userId", "grpcUser1", "X-Real-IP", "192.168.1.100")
-	//md := metadata.Pairs("userId", "grpcUser1")
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	// функции, в которых будем отправлять сообщения
