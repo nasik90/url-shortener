@@ -18,7 +18,7 @@ import (
 
 	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	"github.com/nasik90/url-shortener/internal/app/grpcapi"
-	grpsserver "github.com/nasik90/url-shortener/internal/app/grpcserver"
+	"github.com/nasik90/url-shortener/internal/app/grpcserver"
 	handler "github.com/nasik90/url-shortener/internal/app/handlers"
 	"github.com/nasik90/url-shortener/internal/app/logger"
 	"github.com/nasik90/url-shortener/internal/app/server"
@@ -81,7 +81,7 @@ func main() {
 	handler := handler.NewHandler(service, options.TrustedSubnet)
 	shortenerServer := grpcapi.NewShortenerServer(service)
 	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
-	grpcServer := grpsserver.NewGRPCServer(shortenerServer, ":3200", options.TrustedSubnet)
+	grpcServer := grpcserver.NewGRPCServer(shortenerServer, ":3200", options.TrustedSubnet)
 
 	go service.HandleRecords()
 
