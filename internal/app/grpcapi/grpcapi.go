@@ -96,8 +96,9 @@ func (s *ShortenerServerStruct) GetUserURLs(ctx context.Context, req *GetUserURL
 
 // MarkRecordsForDeletion помечает на удаление переданные в массиве короткие URL
 func (s *ShortenerServerStruct) MarkRecordsForDeletion(ctx context.Context, req *MarkRecordsForDeletionRequest) (*MarkRecordsForDeletionResponse, error) {
+	var response MarkRecordsForDeletionResponse
 	s.service.MarkRecordsForDeletion(ctx, req.ShortURLs, middleware.UserIDFromContext(ctx))
-	return nil, nil
+	return &response, nil
 }
 
 // Ping - проверяет работоспособность сервера и БД.

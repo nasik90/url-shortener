@@ -18,16 +18,18 @@ import (
 // Содержит встроенную структуру из типовой библиотеки http.Server и handler.
 type Server struct {
 	http.Server
-	handler     *handler.Handler
-	enableHTTPS bool
+	handler       *handler.Handler
+	enableHTTPS   bool
+	trustedSubnet string
 }
 
 // NewServer создает экземпляр структуры Server.
-func NewServer(handler *handler.Handler, serverAddress string, enableHTTPS bool) *Server {
+func NewServer(handler *handler.Handler, serverAddress string, enableHTTPS bool, trustedSubnet string) *Server {
 	s := &Server{}
 	s.Addr = serverAddress
 	s.handler = handler
 	s.enableHTTPS = enableHTTPS
+	s.trustedSubnet = trustedSubnet
 	return s
 }
 
@@ -47,7 +49,7 @@ func (s *Server) RunServer() error {
 		r.Delete("/api/user/urls", s.handler.MarkRecordsForDeletion())
 		r.Get("/api/internal/stats", s.handler.GetURLsStats())
 	})
-	s.Handler = logger.RequestLogger(middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP)))
+	s.Handler = logger.RequestLogger(middleware.TrustedSubnet((middleware.Auth(middleware.GzipMiddleware(r.ServeHTTP))), s.trustedSubnet))
 	var err error
 	if s.enableHTTPS {
 		err = s.ListenAndServeTLS("server.crt", "server.key")

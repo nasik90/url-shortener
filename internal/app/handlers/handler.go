@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
 	"strings"
 
@@ -248,11 +247,6 @@ func (h *Handler) MarkRecordsForDeletion() http.HandlerFunc {
 // В настройках сервиса обязательно должен быть указан CIDR и передан в заголовке X-Real-IP IP адрес.
 func (h *Handler) GetURLsStats() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		err := h.checkForTrustedNet(req)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusForbidden)
-			return
-		}
 		ctx := req.Context()
 		urls, users, err := h.service.GetURLsStats(ctx)
 		if err != nil {
@@ -274,33 +268,4 @@ func (h *Handler) GetURLsStats() http.HandlerFunc {
 		res.WriteHeader(status)
 		res.Write(result)
 	}
-}
-
-func (h *Handler) checkForTrustedNet(req *http.Request) error {
-
-	if h.trustedSubnet == "" {
-		return errors.New("trusted subnet is empty, access forbidden")
-	}
-
-	_, trustedNet, err := net.ParseCIDR(h.trustedSubnet)
-	if err != nil {
-		return err
-	}
-
-	ipStr := req.Header.Get("X-Real-IP")
-	if ipStr == "" {
-		return errors.New("forbidden - missing X-Real-IP header")
-	}
-
-	ip := net.ParseIP(ipStr)
-	if ip == nil {
-		return errors.New("forbidden - invalid IP")
-	}
-
-	if !trustedNet.Contains(ip) {
-		return errors.New("forbidden - IP not in trusted subnet")
-	}
-
-	return nil
-
 }

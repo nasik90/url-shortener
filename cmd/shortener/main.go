@@ -34,102 +34,27 @@ var (
 )
 
 func main() {
-
 	printFlags()
 
-	options := new(settings.Options)
-	settings.ParseFlags(options)
+	options := parseOptions()
 
 	if err := logger.Initialize(options.LogLevel); err != nil {
 		panic(err)
 	}
 
-	if options.EnablePprofServ {
-		go func() {
-			if err := http.ListenAndServe(options.PprofServerAddress, nil); err != nil {
-				logger.Log.Error("run pprof server", zap.Error(err))
-			}
-			logger.Log.Info("run pprof server", zap.String("addr", options.PprofServerAddress))
-		}()
-	}
+	startPprofIfEnabled(options)
 
-	var (
-		repo service.Repository
-		err  error
-	)
-	if options.DatabaseDSN != "" {
-		conn, err := sql.Open("pgx", options.DatabaseDSN)
-		if err != nil {
-			logger.Log.Fatal("open pgx conn", zap.String("DatabaseDSN", options.DatabaseDSN), zap.String("error", err.Error()))
-		}
-		repo, err = pg.NewStore(conn)
-		if err != nil {
-			logger.Log.Fatal("create pg repo", zap.String("DatabaseDSN", options.DatabaseDSN), zap.String("error", err.Error()))
-		}
-
-	} else if options.FilePath != "" {
-		repo, err = storage.NewFileStorage(options.FilePath)
-		if err != nil {
-			logger.Log.Fatal("create file repo", zap.String("FilePath", options.FilePath), zap.String("error", err.Error()))
-		}
-
-	} else {
-		repo = storage.NewLocalCahce()
-	}
+	repo := initRepository(options)
 
 	service := service.NewService(repo, options.BaseURL)
 	handler := handler.NewHandler(service, options.TrustedSubnet)
 	shortenerServer := grpcapi.NewShortenerServer(service)
-	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS)
-	grpcServer := grpcserver.NewGRPCServer(shortenerServer, ":3200", options.TrustedSubnet)
+	server := server.NewServer(handler, options.ServerAddress, options.EnableHTTPS, options.TrustedSubnet)
+	grpcServer := grpcserver.NewGRPCServer(shortenerServer, options.GRPCServerAddress, options.TrustedSubnet)
 
 	go service.HandleRecords()
 
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = server.RunServer()
-		if err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				logger.Log.Fatal("run server", zap.String("error", err.Error()))
-			}
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err = grpcServer.RunServer(); err != nil {
-			logger.Log.Fatal("run grpc server", zap.String("error", err.Error()))
-		}
-	}()
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-sigs
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
-		logger.Log.Info("closing http server")
-		if err := server.StopServer(ctx); err != nil {
-			logger.Log.Error("stop http server", zap.String("error", err.Error()))
-		}
-		logger.Log.Info("closing grpc server")
-		grpcServer.StopServer()
-		logger.Log.Info("closing the storage")
-		if err := repo.Close(); err != nil {
-			logger.Log.Error("close storage", zap.String("error", err.Error()))
-		}
-		logger.Log.Info("ready to exit")
-	}()
-
-	wg.Wait()
-	logger.Log.Info("closed gracefuly")
-
+	runServers(server, grpcServer, repo)
 }
 
 func printFlags() {
@@ -147,4 +72,98 @@ func printFlags() {
 		}
 
 	}
+}
+
+func parseOptions() *settings.Options {
+	options := new(settings.Options)
+	settings.ParseFlags(options)
+	return options
+}
+
+func startPprofIfEnabled(options *settings.Options) {
+	if !options.EnablePprofServ {
+		return
+	}
+	go func() {
+		if err := http.ListenAndServe(options.PprofServerAddress, nil); err != nil {
+			logger.Log.Error("run pprof server", zap.Error(err))
+		}
+		logger.Log.Info("run pprof server", zap.String("addr", options.PprofServerAddress))
+	}()
+}
+
+func initRepository(options *settings.Options) service.Repository {
+	var (
+		repo service.Repository
+		err  error
+	)
+
+	if options.DatabaseDSN != "" {
+		conn, err := sql.Open("pgx", options.DatabaseDSN)
+		if err != nil {
+			logger.Log.Fatal("open pgx conn", zap.String("DatabaseDSN", options.DatabaseDSN), zap.Error(err))
+		}
+		repo, err = pg.NewStore(conn)
+		if err != nil {
+			logger.Log.Fatal("create pg repo", zap.String("DatabaseDSN", options.DatabaseDSN), zap.Error(err))
+		}
+	} else if options.FilePath != "" {
+		repo, err = storage.NewFileStorage(options.FilePath)
+		if err != nil {
+			logger.Log.Fatal("create file repo", zap.String("FilePath", options.FilePath), zap.Error(err))
+		}
+	} else {
+		repo = storage.NewLocalCahce()
+	}
+
+	return repo
+}
+
+func runServers(server *server.Server, grpcServer *grpcserver.GRPCServer, repo service.Repository) {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := server.RunServer(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Log.Fatal("run server", zap.Error(err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := grpcServer.RunServer(); err != nil {
+			logger.Log.Fatal("run grpc server", zap.Error(err))
+		}
+	}()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-sigs
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		logger.Log.Info("closing http server")
+		if err := server.StopServer(ctx); err != nil {
+			logger.Log.Error("stop http server", zap.Error(err))
+		}
+
+		logger.Log.Info("closing grpc server")
+		grpcServer.StopServer()
+
+		logger.Log.Info("closing the storage")
+		if err := repo.Close(); err != nil {
+			logger.Log.Error("close storage", zap.Error(err))
+		}
+
+		logger.Log.Info("ready to exit")
+	}()
+
+	wg.Wait()
+	logger.Log.Info("closed gracefully")
 }

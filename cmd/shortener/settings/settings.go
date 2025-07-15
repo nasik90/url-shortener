@@ -27,6 +27,11 @@ var (
 	ErrShortURLNotUnique = errors.New("short URL is not unique")
 )
 
+type methodToCheckTrustedNet struct{ GRPSMethod, APIMethod string }
+
+// MethodsToCheckTrustedNet - массив с именами методов для проверки доверенной сети.
+var MethodsToCheckTrustedNet = [1]methodToCheckTrustedNet{{GRPSMethod: "GetURLsStats", APIMethod: "/api/internal/stats"}}
+
 // Options - структура для хранения настроек сервиса.
 type Options struct {
 	ServerAddress      string `json:"server_address"`
@@ -39,6 +44,7 @@ type Options struct {
 	EnableHTTPS        bool   `json:"enable_https,omitempty"`
 	Config             string
 	TrustedSubnet      string `json:"trusted_subnet"`
+	GRPCServerAddress  string `json:"grps_server_address"`
 }
 
 // Record - структура для хранения короткого URL - UserID.
@@ -83,6 +89,7 @@ func fillDefaultOptions(o *Options) {
 	o.PprofServerAddress = ":8181"
 	o.EnableHTTPS = false
 	o.TrustedSubnet = "192.168.0.1/24"
+	o.GRPCServerAddress = ":3200"
 }
 
 func overrideOptionsFromConfig(o *Options, c *Options) {
@@ -108,6 +115,9 @@ func overrideOptionsFromConfig(o *Options, c *Options) {
 	o.EnableHTTPS = c.EnableHTTPS
 	if c.TrustedSubnet != "" {
 		o.TrustedSubnet = c.TrustedSubnet
+	}
+	if c.GRPCServerAddress != "" {
+		o.GRPCServerAddress = c.GRPCServerAddress
 	}
 }
 
@@ -140,6 +150,7 @@ func overrideOptionsFromCmd(o *Options) {
 	flag.StringVar(&o.PprofServerAddress, "pa", o.PprofServerAddress, "address and port to run pprof server")
 	flag.BoolVar(&o.EnableHTTPS, "s", o.EnableHTTPS, "enable HTPPS connection")
 	flag.StringVar(&o.TrustedSubnet, "t", o.TrustedSubnet, "trusted subnet")
+	flag.StringVar(&o.GRPCServerAddress, "ga", o.GRPCServerAddress, "address and port to run gRPC server")
 	flag.Parse()
 }
 
@@ -169,5 +180,8 @@ func overrideOptionsFromEnv(o *Options) {
 	}
 	if trustedSubnet := os.Getenv("TRUSTED_SUBNET"); trustedSubnet != "" {
 		o.TrustedSubnet = trustedSubnet
+	}
+	if gRPCServerAddress := os.Getenv("GRPC_SERVER_ADDRESS"); gRPCServerAddress != "" {
+		o.GRPCServerAddress = gRPCServerAddress
 	}
 }

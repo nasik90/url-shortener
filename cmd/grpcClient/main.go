@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nasik90/url-shortener/cmd/shortener/settings"
 	pb "github.com/nasik90/url-shortener/internal/app/grpcapi"
 
 	"google.golang.org/grpc"
@@ -12,15 +13,17 @@ import (
 )
 
 func main() {
+	options := new(settings.Options)
+	settings.ParseFlags(options)
 	// устанавливаем соединение с сервером
-	conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(options.GRPCServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer conn.Close()
 	c := pb.NewShortenerClient(conn)
 
-	md := metadata.Pairs("userId", "grpcUser1", "X-Real-IP", "192.168.1.100")
+	md := metadata.Pairs("userId", "grpcUser1", "X-Real-IP", "192.168.0.100")
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	// функции, в которых будем отправлять сообщения

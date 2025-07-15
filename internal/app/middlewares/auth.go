@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	trustednet "github.com/nasik90/url-shortener/internal/app/trustedNet"
 )
 
 // Claims — структура утверждений, которая включает стандартные утверждения
@@ -102,4 +103,16 @@ func getUserID(tokenString string) (string, error) {
 // UserIDFromContext возвращает id пользователя из переданного контекста.
 func UserIDFromContext(ctx context.Context) string {
 	return ctx.Value(UserIDContextKey{}).(string)
+}
+
+// Auth выполняет аутентификацию пользователя.
+func TrustedSubnet(h http.HandlerFunc, trustedSubnet string) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		ipStr := req.Header.Get("X-Real-IP")
+		err := trustednet.CheckForTrustedNet(trustedSubnet, ipStr, req.RequestURI)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusForbidden)
+			return
+		}
+	}
 }

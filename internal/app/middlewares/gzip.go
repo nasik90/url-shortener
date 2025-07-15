@@ -2,18 +2,22 @@ package middleware
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
-// GzipMiddleware сжимает ответы и "расжимает" запросы.ц
+// GzipMiddleware сжимает ответы и "расжимает" запросы.
 func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,
 		// который будем передавать следующей функции
 		ow := w
-
+		//fmt.Println(chi.RouteContext(r.Context()).RouteMethod)
+		fmt.Println(chi.RouteContext(r.Context()).RoutePattern())
 		// проверяем, что клиент умеет получать от сервера сжатые данные в формате gzip
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
