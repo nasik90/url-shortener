@@ -38,6 +38,7 @@ type Options struct {
 	PprofServerAddress string `json:"pprof_server_address"`
 	EnableHTTPS        bool   `json:"enable_https,omitempty"`
 	Config             string
+	TrustedSubnet      string `json:"trusted_subnet"`
 }
 
 // Record - структура для хранения короткого URL - UserID.
@@ -81,6 +82,7 @@ func fillDefaultOptions(o *Options) {
 	o.EnablePprofServ = true
 	o.PprofServerAddress = ":8181"
 	o.EnableHTTPS = false
+	o.TrustedSubnet = "192.168.0.1/24"
 }
 
 func overrideOptionsFromConfig(o *Options, c *Options) {
@@ -104,6 +106,9 @@ func overrideOptionsFromConfig(o *Options, c *Options) {
 		o.PprofServerAddress = c.PprofServerAddress
 	}
 	o.EnableHTTPS = c.EnableHTTPS
+	if c.TrustedSubnet != "" {
+		o.TrustedSubnet = c.TrustedSubnet
+	}
 }
 
 func readConfig(fname string) (Options, error) {
@@ -134,6 +139,7 @@ func overrideOptionsFromCmd(o *Options) {
 	flag.BoolVar(&o.EnablePprofServ, "p", o.EnablePprofServ, "enable pprof server")
 	flag.StringVar(&o.PprofServerAddress, "pa", o.PprofServerAddress, "address and port to run pprof server")
 	flag.BoolVar(&o.EnableHTTPS, "s", o.EnableHTTPS, "enable HTPPS connection")
+	flag.StringVar(&o.TrustedSubnet, "t", o.TrustedSubnet, "trusted subnet")
 	flag.Parse()
 }
 
@@ -160,5 +166,8 @@ func overrideOptionsFromEnv(o *Options) {
 			panic("error parsing env var ENABLE_HTTPS: " + err.Error())
 		}
 		o.EnableHTTPS = val
+	}
+	if trustedSubnet := os.Getenv("TRUSTED_SUBNET"); trustedSubnet != "" {
+		o.TrustedSubnet = trustedSubnet
 	}
 }

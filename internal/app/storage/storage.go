@@ -124,6 +124,24 @@ func (l *LocalCache) MarkRecordsForDeletion(ctx context.Context, records ...sett
 	return nil
 }
 
+// GetURLsCount подсчитывает количество коротких урлов.
+// Возвращает число коротких урлов.
+func (l *LocalCache) GetURLsCount(ctx context.Context) (int, error) {
+	return len(l.ShortOriginalURL), nil
+}
+
+// GetUsersCount подсчитывает количество пользователей.
+// Возвращает число пользователей.
+func (l *LocalCache) GetUsersCount(ctx context.Context) (int, error) {
+	uniqueUser := make(map[string]int)
+	for _, v := range l.ShortURLUserID {
+		if _, ok := uniqueUser[v]; !ok {
+			uniqueUser[v] = 1
+		}
+	}
+	return len(uniqueUser), nil
+}
+
 // FileStorage - структура, в которой указаны данные для хранения в файловом хранилище.
 type FileStorage struct {
 	mu          sync.RWMutex
@@ -232,4 +250,16 @@ func (f *FileStorage) GetUserURLs(ctx context.Context, userID string) (result ma
 func (f *FileStorage) MarkRecordsForDeletion(ctx context.Context, records ...settings.Record) error {
 	// + Написать обновление записи в файле
 	return f.localCache.MarkRecordsForDeletion(ctx, records...)
+}
+
+// GetURLsCount подсчитывает количество коротких урлов.
+// Возвращает число коротких урлов.
+func (f *FileStorage) GetURLsCount(ctx context.Context) (int, error) {
+	return f.localCache.GetURLsCount(ctx)
+}
+
+// GetUsersCount подсчитывает количество пользователей.
+// Возвращает число пользователей.
+func (f *FileStorage) GetUsersCount(ctx context.Context) (int, error) {
+	return f.localCache.GetUsersCount(ctx)
 }
